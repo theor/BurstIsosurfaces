@@ -64,26 +64,9 @@ namespace UnityTemplateProjects
                         }
                     }
                 }
-                
-                // outputVerts[0] = new Vector3(0, 0 , 0);
-                // outputVerts[1] = new Vector3(0, 0 , 1);
-                // outputVerts[2] = new Vector3(1, 0 , 0);
-                //
-                // outputNormals[0] = Vector3.up;
-                // outputNormals[1] = Vector3.up;
-                // outputNormals[2] = Vector3.up;
-                //
-                // outputTris[0] = 0;
-                // outputTris[1] = 1;
-                // outputTris[2] = 2;
 
                 indexVertexCounts[0] = i;
                 indexVertexCounts[1] = v;
-                // for (int i = indexVertexCounts[0]; i < outputTris.Length; i++)
-                // {
-                //     outputTris[i] = 0;
-                // }
-
 
                 void AddQuad(ref int v, ref int i, float3 tl, float3 tr, float3 bl, float3 br)
                 {
@@ -108,6 +91,7 @@ namespace UnityTemplateProjects
                     outputNormals[v] = n;
                     outputVerts[v++] = br;
                 }
+                
                 void CreateCube(ref int v, ref int i, int x, int y, int z)
                 {
                     float3 a = delta*new float3(x+0, y+1 , z+1);
