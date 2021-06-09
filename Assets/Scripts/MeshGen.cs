@@ -1,3 +1,4 @@
+using Unity.Burst;
 using Unity.Collections;
 using Unity.Jobs;
 using Unity.Mathematics;
@@ -27,13 +28,15 @@ namespace UnityTemplateProjects
             };
             var maxCubeCount = VoxelSide * VoxelSide * VoxelSide;
             var maxTriCount = maxCubeCount *6/*faces*/*2/*tri per face*/;
+            chunk.RequestGeneration();
             job.outputMesh.SetIndexBufferParams(maxTriCount*3, IndexFormat.UInt32);
-            job.outputMesh.SetVertexBufferParams(maxCubeCount*8,
+            job.outputMesh.SetVertexBufferParams(maxCubeCount*6*4,
                 new VertexAttributeDescriptor(VertexAttribute.Position),
                 new VertexAttributeDescriptor(VertexAttribute.Normal, stream:1));
             chunk.Handle = job.Schedule();
         }
 
+        [BurstCompile]
         public struct GenJob : IJob
         {
             public Mesh.MeshData outputMesh;
@@ -43,17 +46,21 @@ namespace UnityTemplateProjects
 
             public void Execute()
             {
-                var outputVerts = outputMesh.GetVertexData<Vector3>();
-                var outputNormals = outputMesh.GetVertexData<Vector3>(stream:1);
+                var outputVerts = outputMesh.GetVertexData<float3>();
+                var outputNormals = outputMesh.GetVertexData<float3>(stream:1);
                 var outputTris = outputMesh.GetIndexData<int>();
 
+                int v = 0;
+                int i = 0;
+                var delta = 1f / voxelSide;
+                
                 for (int x = 0; x < voxelSide; x++)
                 {
                     for (int y = 0; y < voxelSide; y++)
                     {
                         for (int z = 0; z < voxelSide; z++)
                         {
-                            CreateCube(x, y, z);
+                            CreateCube(ref v, ref i, x, y, z);
                         }
                     }
                 }
@@ -70,69 +77,59 @@ namespace UnityTemplateProjects
                 // outputTris[1] = 1;
                 // outputTris[2] = 2;
 
-                indexVertexCounts[0] = voxelSide * voxelSide * voxelSide * 6 * 2 * 3;
-                indexVertexCounts[1] = voxelSide * voxelSide * voxelSide * 8;
+                indexVertexCounts[0] = i;
+                indexVertexCounts[1] = v;
                 // for (int i = indexVertexCounts[0]; i < outputTris.Length; i++)
                 // {
                 //     outputTris[i] = 0;
                 // }
 
-                void AddTri(ref int indice, int v1, int v2, int v3)
+
+                void AddQuad(ref int v, ref int i, float3 tl, float3 tr, float3 bl, float3 br)
                 {
-                    outputTris[indice++] = v1;
-                    outputTris[indice++] = v2;
-                    outputTris[indice++] = v3;
+                    var n = math.cross(tr - tl, bl - tl);
+                    outputTris[i++] = v;
+                    outputTris[i++] = v+1;
+                    outputTris[i++] = v+2;
+
+                    outputTris[i++] = v+2;
+                    outputTris[i++] = v+1;
+                    outputTris[i++] = v+3;
+
+                    outputNormals[v] = n;
+                    outputVerts[v++] = tl;
+                    
+                    outputNormals[v] = n;
+                    outputVerts[v++] = tr;
+                    
+                    outputNormals[v] = n;
+                    outputVerts[v++] = bl;
+                    
+                    outputNormals[v] = n;
+                    outputVerts[v++] = br;
                 }
-                void CreateCube(int x, int y, int z)
+                void CreateCube(ref int v, ref int i, int x, int y, int z)
                 {
-                    // 5 7
-                    // 4 6 
-                    // 1 3
-                    // 0 2 
+                    float3 a = delta*new float3(x+0, y+1 , z+1);
+                    float3 b = delta*new float3(x+1, y+1 , z+1);
+                    float3 c = delta*new float3(x+0, y+1 , z+0);
+                    float3 d = delta*new float3(x+1, y+1 , z+0);
+                    float3 e = delta*new float3(x+0, y+0 , z+1);
+                    float3 f = delta*new float3(x+1, y+0 , z+1);
+                    float3 g = delta*new float3(x+0, y+0 , z+0);
+                    float3 h = delta*new float3(x+1, y+0 , z+0);
                     
-                    outputVerts[0] = new Vector3(x+0, y+0 , z+0);
-                    outputVerts[1] = new Vector3(x+0, y+0 , z+1);
-                    outputVerts[2] = new Vector3(x+1, y+0 , z+0);
-                    outputVerts[3] = new Vector3(x+1, y+0 , z+1);
+                    // a b
+                    // c d
                     
-                    outputVerts[4] = new Vector3(x+0, y+1 , z+0);
-                    outputVerts[5] = new Vector3(x+0, y+1 , z+1);
-                    outputVerts[6] = new Vector3(x+1, y+1 , z+0);
-                    outputVerts[7] = new Vector3(x+1, y+1 , z+1);
-
-                    int indice = 0;
-                    AddTri(ref indice, 0, 2, 1);
-                    AddTri(ref indice, 2, 3, 1);
-                    AddTri(ref indice, 4, 5, 6);
-                    AddTri(ref indice, 6, 5, 7);
-                    
-                    // 4 6
-                    // 0 2
-                    AddTri(ref indice, 0, 4, 2);
-                    AddTri(ref indice, 2, 4, 6);
-                    // 5 7
-                    // 1 3
-                    AddTri(ref indice, 1, 3, 5);
-                    AddTri(ref indice, 5, 3, 7);
- 
-
-                    // 5 4
-                    // 1 0
-                    AddTri(ref indice, 0, 1, 5);
-                    AddTri(ref indice, 0, 5, 4);
-                    // 7 6
-                    // 3 2
-                    AddTri(ref indice, 3, 2, 7);
-                    AddTri(ref indice, 7, 2, 6);
-                
-                    outputNormals[0] = Vector3.down;
-                    outputNormals[1] = Vector3.down;
-                    outputNormals[2] = Vector3.down;
-                    outputNormals[3] = Vector3.down;
-                    outputNormals[4] = Vector3.up;
-                    outputNormals[5] = Vector3.up;
-                    outputNormals[6] = Vector3.up;
-                    outputNormals[7] = Vector3.up;
+                    // e f
+                    // g h
+                    AddQuad(ref v, ref i, a,b,c,d);
+                    AddQuad(ref v, ref i, f,e,h,g);
+                    AddQuad(ref v, ref i, c,d,g,h);
+                    AddQuad(ref v, ref i, b,a,f,e);
+                    AddQuad(ref v, ref i, d,b,h,f);
+                    AddQuad(ref v, ref i, a,c,e,g);
                 }
             }
         }

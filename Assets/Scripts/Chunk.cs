@@ -1,9 +1,11 @@
 using System;
+using System.Diagnostics;
 using Unity.Collections;
 using Unity.Jobs;
 using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.Rendering;
+using Debug = UnityEngine.Debug;
 
 namespace UnityTemplateProjects
 {
@@ -15,6 +17,7 @@ namespace UnityTemplateProjects
         public bool Generating;
         public Mesh.MeshDataArray OutputMeshData;
         public NativeArray<int> IndexVertexCounts;
+        private Stopwatch _sw;
 
         private void Start()
         {
@@ -33,8 +36,9 @@ namespace UnityTemplateProjects
         {
             if (Generating && Handle.IsCompleted)
             {
+                _sw.Stop();
                 Handle.Complete();
-                Debug.Log($"Complete Chunk, Indices: {IndexVertexCounts[0]}, Vertices: {IndexVertexCounts[1]}");
+                Debug.Log($"Complete Chunk in {_sw.ElapsedMilliseconds}ms, Indices: {IndexVertexCounts[0]}, Vertices: {IndexVertexCounts[1]}");
                 Generating = false;
                 transform.position = new Vector3(Coords.x, 0, Coords.y);
                 
@@ -50,6 +54,11 @@ namespace UnityTemplateProjects
                 meshData.SetSubMesh(0, sm);
                 Mesh.ApplyAndDisposeWritableMeshData(OutputMeshData, Mesh);
             }
+        }
+
+        public void RequestGeneration()
+        {
+            _sw = Stopwatch.StartNew();
         }
     }
 }
