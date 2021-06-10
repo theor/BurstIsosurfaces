@@ -27,6 +27,7 @@ namespace UnityTemplateProjects
             }
         }
         
+        [Range(1, 16)]
         public int VoxelSide = 1;
 
         public NativeArray<ushort> EdgeTable;
@@ -107,15 +108,38 @@ namespace UnityTemplateProjects
             return coords.x + coords.y * v1 * v1 + coords.z * v1;
         }
 
+        private static float fbm(float3 pos, float persistence, int octaves, float lacunarity)
+        {
+            float g = math.exp2(-persistence);
+            float f = 1.0f;
+            float a = 1.0f;
+            float t = 0.0f;
+            for (int i = 0; i < octaves; i++)
+            {
+                t += a * noise.snoise(f * pos);
+                f *= lacunarity;
+                a *= g;
+            }
+
+            return t;
+        }
+
         public static float Density(float3 coords)
         {
             // return .25f - coords.z; // plane
+            float persistence = 1;
+            int octaves = 5;
+            float lacunarity = .5f;
+            coords *= .5f;
+            return fbm(coords + fbm(coords, persistence, octaves, lacunarity), persistence, octaves, lacunarity);
+            
             
             float3 warp = noise.srdnoise(coords.xy * .008f, coords.z* .008f).xyz;
             coords += warp * .08f;
-            return noise.snoise(coords * 4.03f) * .25f +
-                   noise.snoise(coords * 1.96f) * .5f +
-                   noise.snoise(coords * 1.01f) * 1f;
+            return 
+                math.min(coords.y - .5f, noise.snoise(coords * 4.03f) * .25f +
+                                                                     noise.snoise(coords * 1.96f) * .5f +
+                                                                     noise.snoise(coords * .601f) * 1f);
 
             // return coords.y - ((math.sin(coords.x * 10) + math.cos(coords.z * 10)) * .1f + .25f);
 

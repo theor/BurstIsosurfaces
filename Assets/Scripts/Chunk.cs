@@ -6,6 +6,7 @@ using Unity.Jobs;
 using Unity.Mathematics;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.Assertions;
 using UnityEngine.Rendering;
 using Debug = UnityEngine.Debug;
 
@@ -104,11 +105,12 @@ namespace UnityTemplateProjects
             var maxCubeCount = _meshGen.VoxelSide * _meshGen.VoxelSide * _meshGen.VoxelSide;
             var maxTriCount = maxCubeCount*5;// maxCubeCount * 6 /*faces*/ * 2 /*tri per face*/;
             var maxIndexCount = maxTriCount * 3;
+            Assert.IsTrue(maxIndexCount < ushort.MaxValue);
             job.OutputMesh.SetIndexBufferParams(maxIndexCount, IndexFormat.UInt32);
             var maxVertexCount = maxIndexCount;// maxCubeCount * 6 * 4;
             job.OutputMesh.SetVertexBufferParams(maxVertexCount,
                 new VertexAttributeDescriptor(VertexAttribute.Position),
-                new VertexAttributeDescriptor(VertexAttribute.Normal, stream: 1));
+                new VertexAttributeDescriptor(VertexAttribute.Normal, stream: 1, format: VertexAttributeFormat.Float16, dimension: 4));
             this._handle.Complete();
             this._handle = job.Schedule(h);
             // Debug.Log($"Generate {Coords} max vert {maxVertexCount} max indices {maxIndexCount}");

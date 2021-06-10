@@ -32,7 +32,7 @@ namespace UnityTemplateProjects
         public unsafe void Execute()
         {
             var outputVerts = OutputMesh.GetVertexData<float3>();
-            var outputNormals = OutputMesh.GetVertexData<float3>(stream:1);
+            var outputNormals = OutputMesh.GetVertexData<half4>(stream:1);
             var outputTris = OutputMesh.GetIndexData<int>();
 
             var v1 = VoxelSide + 1;
@@ -113,13 +113,13 @@ namespace UnityTemplateProjects
                             for (int j = 0; j < 3; j++)
                             {
                                 var vert = TriTable[cubeindex * 16 + 3 * i + j];
-                                outputTris[ind++] = v+j;
+                                outputTris[ind++] = (ushort) (v+j);
                                 outputVerts[v+j] = edgePoints[vert];
                             }
 
-                            var n = math.cross(outputVerts[v + 1] - outputVerts[v],
-                                outputVerts[v + 2] - outputVerts[v]);
-                            outputNormals[v] = n;
+                            var n = new half4((half3)math.cross(outputVerts[v + 1] - outputVerts[v],
+                                outputVerts[v + 2] - outputVerts[v]), (half)1f);
+                            outputNormals[v] =  n;
                             outputNormals[v+1] = n;
                             outputNormals[v+2] = n;
 
@@ -139,54 +139,6 @@ namespace UnityTemplateProjects
             //     outputTris[j] = 0;
             // }
             UnsafeUtility.MemClear((int*)outputTris.GetUnsafePtr()+ind, UnsafeUtility.SizeOf<int>()* (outputTris.Length - ind));
-
-            void AddQuad(ref int v, ref int i, float3 tl, float3 tr, float3 bl, float3 br)
-            {
-                var n = math.cross(tr - tl, bl - tl);
-                outputTris[i++] = v;
-                outputTris[i++] = v+1;
-                outputTris[i++] = v+2;
-
-                outputTris[i++] = v+2;
-                outputTris[i++] = v+1;
-                outputTris[i++] = v+3;
-
-                outputNormals[v] = n;
-                outputVerts[v++] = tl;
-                    
-                outputNormals[v] = n;
-                outputVerts[v++] = tr;
-                    
-                outputNormals[v] = n;
-                outputVerts[v++] = bl;
-                    
-                outputNormals[v] = n;
-                outputVerts[v++] = br;
-            }
-                
-            void CreateCube(ref int v, ref int i, int x, int y, int z)
-            {
-                float3 a = delta*new float3(x+0, y+1 , z+1);
-                float3 b = delta*new float3(x+1, y+1 , z+1);
-                float3 c = delta*new float3(x+0, y+1 , z+0);
-                float3 d = delta*new float3(x+1, y+1 , z+0);
-                float3 e = delta*new float3(x+0, y+0 , z+1);
-                float3 f = delta*new float3(x+1, y+0 , z+1);
-                float3 g = delta*new float3(x+0, y+0 , z+0);
-                float3 h = delta*new float3(x+1, y+0 , z+0);
-                    
-                // a b
-                // c d
-                    
-                // e f
-                // g h
-                AddQuad(ref v, ref i, a,b,c,d);
-                AddQuad(ref v, ref i, f,e,h,g);
-                AddQuad(ref v, ref i, c,d,g,h);
-                AddQuad(ref v, ref i, b,a,f,e);
-                AddQuad(ref v, ref i, d,b,h,f);
-                AddQuad(ref v, ref i, a,c,e,g);
-            }
         }
     }
 }
