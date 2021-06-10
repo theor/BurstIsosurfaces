@@ -13,6 +13,18 @@ namespace UnityTemplateProjects
         public int VoxelSide = 1;
         public float ScaleFactor = 1;
 
+        public  struct OctInt
+        {
+            public unsafe fixed int Value[8];
+            public unsafe int this[int i] => Value[i];
+        }
+        
+        public unsafe struct OctFloat
+        {
+            public fixed float Value[8];
+            public float this[int i] => Value[i];
+        }
+        
         public void RequestChunk(Chunk chunk, int2 coords)
         {
             chunk.Generating = true;
@@ -21,45 +33,79 @@ namespace UnityTemplateProjects
             chunk.OutputMeshData = Mesh.AllocateWritableMeshData(1);
             
             
-            chunk.RequestGeneration(coords, this);
+            chunk.RequestGeneration(coords);
+        }
+
+        public static unsafe bool GetCornerCoords(int3 voxelCoords, int v1, out OctInt coords)
+        {
+            coords.Value[0] = CoordsToIndex(voxelCoords, v1);
+            coords.Value[1] = coords.Value[0] + 1; // +x
+            coords.Value[2] = coords.Value[1] + v1; // +z
+            coords.Value[3] = coords.Value[2] - 1; // -x
+            coords.Value[4] = coords.Value[0] + v1*v1; // +y
+            coords.Value[5] = coords.Value[1] + v1*v1; // +y
+            coords.Value[6] = coords.Value[2] + v1*v1; // +y
+            coords.Value[7] = coords.Value[3] + v1*v1; // +y
+            return true;
+        }
+        
+        
+
+        [BurstCompile]
+        public struct DensityJob : IJobParallelFor
+        {
+            public int VoxelSide;
+            public int2 Coords;
+            [WriteOnly]
+            public NativeArray<float> Densities;
+            public void Execute(int index)
+            {
+                var delta = 1f / VoxelSide;
+                var v1 = VoxelSide + 1;
+                // array is xxx zzz yyy
+                float3 coords = (float3)IndexToCoords(index, v1) * delta + new float3(Coords.x, 0, Coords.y);
+                float d = Density(coords);
+                Densities[index] = d;
+            }
         }
 
         [BurstCompile]
         public struct GenJob : IJob
         {
-            public Mesh.MeshData outputMesh;
-            public int2 coords;
-            public NativeArray<int> indexVertexCounts;
-            public int voxelSide;
-            public float scaleFactor;
+            public Mesh.MeshData OutputMesh;
+            public int2 Coords;
+            public NativeArray<int> IndexVertexCounts;
+            public int VoxelSide;
+            public float ScaleFactor;
 
             public unsafe void Execute()
             {
-                var outputVerts = outputMesh.GetVertexData<float3>();
-                var outputNormals = outputMesh.GetVertexData<float3>(stream:1);
-                var outputTris = outputMesh.GetIndexData<int>();
+                var outputVerts = OutputMesh.GetVertexData<float3>();
+                var outputNormals = OutputMesh.GetVertexData<float3>(stream:1);
+                var outputTris = OutputMesh.GetIndexData<int>();
 
                 int v = 0;
                 int i = 0;
-                var delta = 1f / voxelSide;
+                var delta = 1f / VoxelSide;
                 
-                for (int x = 0; x < voxelSide; x++)
+                for (int x = 0; x < VoxelSide; x++)
                 {
-                    var coordsX = scaleFactor * (coords.x + x*delta);
-                    for (int y = 0; y < voxelSide; y++)
+                    var coordsX = ScaleFactor * (Coords.x + x*delta);
+                    for (int y = 0; y < VoxelSide; y++)
                     {
-                        var coordsY = scaleFactor * (y*delta);
-                        for (int z = 0; z < voxelSide; z++)
+                        var coordsY = ScaleFactor * (y*delta);
+                        for (int z = 0; z < VoxelSide; z++)
                         {
-                            var coordsZ = scaleFactor * (coords.y + z * delta);
+                            var coordsZ = ScaleFactor * (Coords.y + z * delta);
+                            var coords = new float3(coordsX, coordsY, coordsZ);
                             if(coordsY < math.sin(coordsX) + math.cos(coordsZ))
                                 CreateCube(ref v, ref i, x, y, z);
                         }
                     }
                 }
 
-                indexVertexCounts[0] = i;
-                indexVertexCounts[1] = v;
+                IndexVertexCounts[0] = i;
+                IndexVertexCounts[1] = v;
                 // for (int j = i; j < outputTris.Length; j++)
                 // {
                 //     outputTris[j] = 0;
@@ -114,6 +160,31 @@ namespace UnityTemplateProjects
                     AddQuad(ref v, ref i, a,c,e,g);
                 }
             }
+        }
+
+        /// <summary>
+        /// IndexToCoords
+        /// </summary>
+        /// <param name="index"></param>
+        /// <param name="v1">VoxelSide + 1</param>
+        /// <returns></returns>
+        public static int3 IndexToCoords(int index, int v1)
+        {
+            return new int3(
+                index % v1,
+                index / (v1 * v1),
+                ((index % (v1 * v1)) / v1)
+            );
+        }
+
+        public static int CoordsToIndex(int3 coords, int v1)
+        {
+            return coords.x + coords.y * v1 * v1 + coords.z * v1;
+        }
+
+        private static float Density(float3 coords)
+        {
+            return .5f - math.distance(coords, new float3(.5f,.5f,.5f));
         }
     }
 }
