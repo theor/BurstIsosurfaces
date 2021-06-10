@@ -1,5 +1,6 @@
 using Unity.Burst;
 using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
 using Unity.Jobs;
 using Unity.Mathematics;
 using UnityEngine;
@@ -10,30 +11,17 @@ namespace UnityTemplateProjects
     public class MeshGen : MonoBehaviour
     {
         public int VoxelSide = 1;
+        public float ScaleFactor = 1;
+
         public void RequestChunk(Chunk chunk, int2 coords)
         {
-            Debug.Log($"Generate {coords}");
             chunk.Generating = true;
             chunk.Coords = coords;
             
             chunk.OutputMeshData = Mesh.AllocateWritableMeshData(1);
             
             
-            var job = new GenJob
-            {
-                voxelSide = VoxelSide,
-                outputMesh = chunk.OutputMeshData[0],
-                coords = coords,
-                indexVertexCounts = chunk.IndexVertexCounts,
-            };
-            var maxCubeCount = VoxelSide * VoxelSide * VoxelSide;
-            var maxTriCount = maxCubeCount *6/*faces*/*2/*tri per face*/;
-            chunk.RequestGeneration();
-            job.outputMesh.SetIndexBufferParams(maxTriCount*3, IndexFormat.UInt32);
-            job.outputMesh.SetVertexBufferParams(maxCubeCount*6*4,
-                new VertexAttributeDescriptor(VertexAttribute.Position),
-                new VertexAttributeDescriptor(VertexAttribute.Normal, stream:1));
-            chunk.Handle = job.Schedule();
+            chunk.RequestGeneration(coords, this);
         }
 
         [BurstCompile]
@@ -43,8 +31,9 @@ namespace UnityTemplateProjects
             public int2 coords;
             public NativeArray<int> indexVertexCounts;
             public int voxelSide;
+            public float scaleFactor;
 
-            public void Execute()
+            public unsafe void Execute()
             {
                 var outputVerts = outputMesh.GetVertexData<float3>();
                 var outputNormals = outputMesh.GetVertexData<float3>(stream:1);
@@ -56,17 +45,26 @@ namespace UnityTemplateProjects
                 
                 for (int x = 0; x < voxelSide; x++)
                 {
+                    var coordsX = scaleFactor * (coords.x + x*delta);
                     for (int y = 0; y < voxelSide; y++)
                     {
+                        var coordsY = scaleFactor * (y*delta);
                         for (int z = 0; z < voxelSide; z++)
                         {
-                            CreateCube(ref v, ref i, x, y, z);
+                            var coordsZ = scaleFactor * (coords.y + z * delta);
+                            if(coordsY < math.sin(coordsX) + math.cos(coordsZ))
+                                CreateCube(ref v, ref i, x, y, z);
                         }
                     }
                 }
 
                 indexVertexCounts[0] = i;
                 indexVertexCounts[1] = v;
+                // for (int j = i; j < outputTris.Length; j++)
+                // {
+                //     outputTris[j] = 0;
+                // }
+                UnsafeUtility.MemClear((int*)outputTris.GetUnsafePtr()+i, UnsafeUtility.SizeOf<int>()* (outputTris.Length - i));
 
                 void AddQuad(ref int v, ref int i, float3 tl, float3 tr, float3 bl, float3 br)
                 {
