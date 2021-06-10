@@ -83,11 +83,13 @@ namespace UnityTemplateProjects
             var h = djob.Schedule(densityCount, 16);
             var job = new MeshGen.GenJob
             {
+                Densities = _densities,
                 VoxelSide = _meshGen.VoxelSide,
-                ScaleFactor = _meshGen.ScaleFactor,
                 OutputMesh = this.OutputMeshData[0],
                 Coords = coords,
                 IndexVertexCounts = this._indexVertexCounts,
+                EdgeTable = _meshGen.EdgeTable,
+                TriTable = _meshGen.TriTable,
             };
             var maxCubeCount = _meshGen.VoxelSide * _meshGen.VoxelSide * _meshGen.VoxelSide;
             var maxTriCount = maxCubeCount * 6 /*faces*/ * 2 /*tri per face*/;

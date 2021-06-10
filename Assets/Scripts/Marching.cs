@@ -6,7 +6,7 @@ namespace UnityTemplateProjects
 {
     static class Marching
     {
-        static NativeArray<ushort> edgeTable(Allocator allocator)
+        public static NativeArray<ushort> EdgeTable(Allocator allocator)
         {
             var a = new ushort[]
             {
@@ -46,7 +46,7 @@ namespace UnityTemplateProjects
             return new NativeArray<ushort>(a, allocator);
         }
 
-        static unsafe NativeArray<int> triTable(Allocator allocator)
+        public static unsafe NativeArray<int> TriTable(Allocator allocator)
         {
             var a = new[]
             {

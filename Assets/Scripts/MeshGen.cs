@@ -1,3 +1,4 @@
+using System;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
@@ -13,6 +14,21 @@ namespace UnityTemplateProjects
         public int VoxelSide = 1;
         public float ScaleFactor = 1;
 
+        public NativeArray<ushort> EdgeTable;
+        public NativeArray<int> TriTable;
+
+        private void Start()
+        {
+            EdgeTable = Marching.EdgeTable(Allocator.Persistent);
+            TriTable = Marching.TriTable(Allocator.Persistent);
+        }
+
+        private void OnDestroy()
+        {
+            EdgeTable.Dispose();
+            TriTable.Dispose();
+        }
+
         public  struct OctInt
         {
             public unsafe fixed int Value[8];
@@ -22,7 +38,11 @@ namespace UnityTemplateProjects
         public unsafe struct OctFloat
         {
             public fixed float Value[8];
-            public float this[int i] => Value[i];
+            public float this[int i]
+            {
+                get { return Value[i]; }
+                set { Value[i] = value; }
+            }
         }
         
         public void RequestChunk(Chunk chunk, int2 coords)
@@ -76,7 +96,10 @@ namespace UnityTemplateProjects
             public int2 Coords;
             public NativeArray<int> IndexVertexCounts;
             public int VoxelSide;
-            public float ScaleFactor;
+            public NativeArray<float> Densities;
+            public float Isolevel;
+            public NativeArray<ushort> EdgeTable;
+            public NativeArray<int> TriTable;
 
             public unsafe void Execute()
             {
@@ -84,21 +107,44 @@ namespace UnityTemplateProjects
                 var outputNormals = OutputMesh.GetVertexData<float3>(stream:1);
                 var outputTris = OutputMesh.GetIndexData<int>();
 
+                var v1 = VoxelSide + 1;
+
                 int v = 0;
                 int i = 0;
                 var delta = 1f / VoxelSide;
                 
                 for (int x = 0; x < VoxelSide; x++)
                 {
-                    var coordsX = ScaleFactor * (Coords.x + x*delta);
+                    var coordsX = (Coords.x + x*delta);
                     for (int y = 0; y < VoxelSide; y++)
                     {
-                        var coordsY = ScaleFactor * (y*delta);
+                        var coordsY = (y*delta);
                         for (int z = 0; z < VoxelSide; z++)
                         {
-                            var coordsZ = ScaleFactor * (Coords.y + z * delta);
-                            var coords = new float3(coordsX, coordsY, coordsZ);
-                            if(coordsY < math.sin(coordsX) + math.cos(coordsZ))
+                            var coordsZ = (Coords.y + z * delta);
+                            var coords = new int3(x, y, z);
+
+                            GetCornerCoords(coords, v1, out var corners);
+
+                            OctFloat voxelDentities;
+                            for (int j = 0; j < 8; j++) voxelDentities[j] = Densities[corners[j]];
+                            
+                            byte cubeindex = 0;
+                            if (voxelDentities[0] < Isolevel) cubeindex |= 1;
+                            if (voxelDentities[1] < Isolevel) cubeindex |= 2;
+                            if (voxelDentities[2] < Isolevel) cubeindex |= 4;
+                            if (voxelDentities[3] < Isolevel) cubeindex |= 8;
+                            if (voxelDentities[4] < Isolevel) cubeindex |= 16;
+                            if (voxelDentities[5] < Isolevel) cubeindex |= 32;
+                            if (voxelDentities[6] < Isolevel) cubeindex |= 64;
+                            if (voxelDentities[7] < Isolevel) cubeindex |= 128;
+
+                            ushort edgeMask = EdgeTable[cubeindex];
+                            if(edgeMask == 0)
+                                continue;
+                            
+                            
+                            // if(coordsY < math.sin(coordsX) + math.cos(coordsZ))
                                 CreateCube(ref v, ref i, x, y, z);
                         }
                     }
