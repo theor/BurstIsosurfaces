@@ -104,7 +104,7 @@ namespace UnityTemplateProjects
                 new VertexAttributeDescriptor(VertexAttribute.Normal, stream: 1));
             this._handle.Complete();
             this._handle = job.Schedule(h);
-            // Debug.Log($"Generate {coords} max vert {maxVertexCount} max indices {maxIndexCount}");
+            Debug.Log($"Generate {coords} max vert {maxVertexCount} max indices {maxIndexCount}");
             _sw = Stopwatch.StartNew();
         }
 

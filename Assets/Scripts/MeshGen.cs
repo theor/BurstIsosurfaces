@@ -100,13 +100,21 @@ namespace UnityTemplateProjects
         {
             public Mesh.MeshData OutputMesh;
             public int2 Coords;
-            public NativeArray<int> IndexVertexCounts;
             public int VoxelSide;
-            public NativeArray<float> Densities;
             public float Isolevel;
+            [WriteOnly]
+            public NativeArray<int> IndexVertexCounts;
+
+            [ReadOnly]
+            public NativeArray<float> Densities;
+
+            [ReadOnly]
             public NativeArray<ushort> EdgeTable;
+            [ReadOnly]
             public NativeArray<int> TriTable;
+            [ReadOnly]
             public NativeArray<Marching.byte2> EdgeConnection;
+            [ReadOnly]
             public NativeArray<float3> EdgeDirection;
 
             public unsafe void Execute()

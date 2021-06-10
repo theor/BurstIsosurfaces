@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Unity.Mathematics;
 using UnityEditor;
 using UnityEngine;
@@ -11,25 +12,74 @@ namespace UnityTemplateProjects
         public Transform Target;
         public Material Material;
         private MeshGen _meshGen;
-        private Chunk _chunk;
+        private List<Chunk> _chunks;
+        private List<Chunk> _freeChunks;
+        private int2 Coords;
+
+        public int ChunkDist = 1;
 
         private void Start()
         {
+            Coords = new int2(Int32.MaxValue);
             _meshGen = GetComponent<MeshGen>();
+
+            var chunkCount = 2 * ChunkDist + 1;
+            chunkCount *= chunkCount;
+            _freeChunks = new List<Chunk>(chunkCount);
+            _chunks = new List<Chunk>(chunkCount);
+            for (int i = 0; i < chunkCount; i++)
+            {
+                var chunk = new GameObject("Chunk"+i, typeof(Chunk),typeof(MeshFilter), typeof(MeshRenderer)).GetComponent<Chunk>();
+                chunk.transform.SetParent(transform);
+                chunk.GetComponent<MeshRenderer>().sharedMaterial = Material;
+                chunk.Setup(_meshGen);
+                _freeChunks.Add(chunk);
+            }
             
-            
-            _chunk = new GameObject("New", typeof(Chunk),typeof(MeshFilter), typeof(MeshRenderer)).GetComponent<Chunk>();
-            _chunk.transform.SetParent(transform);
-            _chunk.GetComponent<MeshRenderer>().sharedMaterial = Material;
-            _chunk.Setup(_meshGen);
         }
 
         private void Update()
         {
             int2 cur = new int2((int) math.floor(Target.position.x), (int) math.floor(Target.position.z));
-            if (!_chunk.Coords.Equals(cur))
+            if (!Coords.Equals(cur))
             {
-                _meshGen.RequestChunk(_chunk, cur);
+                Coords = cur;
+                for (var index = 0; index < _chunks.Count; index++)
+                {
+                    var chunk = _chunks[index];
+                    var d = math.abs(chunk.Coords - Coords);
+                    if (d.x > ChunkDist || d.y > ChunkDist)
+                    {
+                        _freeChunks.Add(chunk);
+                        _chunks.RemoveAt(index);
+                        index--;
+                    }
+                }
+
+                for (var x = -ChunkDist; x <= ChunkDist; x++)
+                for (var y = -ChunkDist; y <= ChunkDist; y++)
+                {
+                    var offset = new int2(x,y);
+                    bool found = false;
+                    for (var index = 0; index < _chunks.Count; index++)
+                    {
+                        var chunk = _chunks[index];
+                        if (chunk.Coords.Equals(Coords + offset))
+                        {
+                            found = true;
+                            break;
+                        }
+                    }
+
+                    if(found)
+                        continue;
+                    var freeChunk = _freeChunks[_freeChunks.Count - 1];
+                    _freeChunks.RemoveAt(_freeChunks.Count - 1);
+                    _meshGen.RequestChunk(freeChunk, Coords + offset);
+                    _chunks.Add(freeChunk);
+                }
+                
+                
             }
         }
 
