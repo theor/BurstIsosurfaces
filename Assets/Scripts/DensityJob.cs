@@ -6,7 +6,7 @@ using Unity.Mathematics;
 namespace UnityTemplateProjects
 {
     [BurstCompile]
-    public struct DensityJob : IJobParallelFor
+    public struct DensityJob : IJobFor
     {
         public int VoxelSide;
         public int2 Coords;

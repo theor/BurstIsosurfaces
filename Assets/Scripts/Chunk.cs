@@ -73,14 +73,20 @@ namespace UnityTemplateProjects
         public void RequestGeneration(int2 coords)
         {
             var densityCount = (_meshGen.VoxelSide + 1)*(_meshGen.VoxelSide + 1)*(_meshGen.VoxelSide + 1);
+            if(!_densities.IsCreated || _densities.Length != densityCount)
+            {
+                if (_densities.IsCreated)
+                    _densities.Dispose();
+                _densities = new NativeArray<float>(densityCount, Allocator.Persistent);
+            }
             var djob = new DensityJob
             {
                 VoxelSide = _meshGen.VoxelSide,
                 Coords = coords,
-                Densities = _densities = new NativeArray<float>(densityCount, Allocator.Persistent)
+                Densities = _densities,
             };
 
-            var h = djob.Schedule(densityCount, 16);
+            var h = djob.ScheduleParallel(densityCount, 4096, default);
             var job = new GenJob
             {
                 Densities = _densities,
@@ -95,10 +101,10 @@ namespace UnityTemplateProjects
                 
             };
             var maxCubeCount = _meshGen.VoxelSide * _meshGen.VoxelSide * _meshGen.VoxelSide;
-            var maxTriCount = maxCubeCount * 6 /*faces*/ * 2 /*tri per face*/;
+            var maxTriCount = maxCubeCount*5;// maxCubeCount * 6 /*faces*/ * 2 /*tri per face*/;
             var maxIndexCount = maxTriCount * 3;
             job.OutputMesh.SetIndexBufferParams(maxIndexCount, IndexFormat.UInt32);
-            var maxVertexCount = maxCubeCount * 6 * 4;
+            var maxVertexCount = maxIndexCount;// maxCubeCount * 6 * 4;
             job.OutputMesh.SetVertexBufferParams(maxVertexCount,
                 new VertexAttributeDescriptor(VertexAttribute.Position),
                 new VertexAttributeDescriptor(VertexAttribute.Normal, stream: 1));
@@ -114,7 +120,7 @@ namespace UnityTemplateProjects
             {
                 _sw.Stop();
                 _handle.Complete();
-                // Debug.Log($"Complete Chunk in {_sw.ElapsedMilliseconds}ms, Indices: {_indexVertexCounts[0]}, Vertices: {_indexVertexCounts[1]}");
+                Debug.Log($"Complete Chunk in {_sw.ElapsedMilliseconds}ms, Indices: {_indexVertexCounts[0]}, Vertices: {_indexVertexCounts[1]}");
                 Generating = false;
                 transform.position = new Vector3(Coords.x, 0, Coords.y);
                 
