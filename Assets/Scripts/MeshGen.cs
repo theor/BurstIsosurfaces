@@ -193,11 +193,17 @@ namespace UnityTemplateProjects
                                 for (int j = 0; j < 3; j++)
                                 {
                                     var vert = TriTable[cubeindex * 16 + 3 * i + j];
-                                    outputTris[ind++] = v;
-                                    outputVerts[v] = edgePoints[vert];
-                                    outputNormals[v] = new float3(0, 1, 0);
-                                    v++;
+                                    outputTris[ind++] = v+j;
+                                    outputVerts[v+j] = edgePoints[vert];
                                 }
+
+                                var n = math.cross(outputVerts[v + 1] - outputVerts[v],
+                                    outputVerts[v + 2] - outputVerts[v]);
+                                outputNormals[v] = n;
+                                outputNormals[v+1] = n;
+                                outputNormals[v+2] = n;
+
+                                v += 3;
                             }
 
                             // if(coordsY < math.sin(coordsX) + math.cos(coordsZ))
