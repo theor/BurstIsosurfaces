@@ -70,7 +70,7 @@ namespace UnityTemplateProjects
             }
         }
 
-        public void RequestGeneration(int2 coords)
+        public JobHandle RequestGeneration()
         {
             var densityCount = (_meshGen.VoxelSide + 1)*(_meshGen.VoxelSide + 1)*(_meshGen.VoxelSide + 1);
             if(!_densities.IsCreated || _densities.Length != densityCount)
@@ -82,17 +82,18 @@ namespace UnityTemplateProjects
             var djob = new DensityJob
             {
                 VoxelSide = _meshGen.VoxelSide,
-                Coords = coords,
+                Coords = Coords,
                 Densities = _densities,
             };
 
+            _handle.Complete();
             var h = djob.ScheduleParallel(densityCount, 4096, default);
             var job = new GenJob
             {
                 Densities = _densities,
                 VoxelSide = _meshGen.VoxelSide,
                 OutputMesh = this.OutputMeshData[0],
-                Coords = coords,
+                Coords = Coords,
                 IndexVertexCounts = this._indexVertexCounts,
                 EdgeTable = _meshGen.EdgeTable,
                 TriTable = _meshGen.TriTable,
@@ -110,8 +111,9 @@ namespace UnityTemplateProjects
                 new VertexAttributeDescriptor(VertexAttribute.Normal, stream: 1));
             this._handle.Complete();
             this._handle = job.Schedule(h);
-            Debug.Log($"Generate {coords} max vert {maxVertexCount} max indices {maxIndexCount}");
+            // Debug.Log($"Generate {Coords} max vert {maxVertexCount} max indices {maxIndexCount}");
             _sw = Stopwatch.StartNew();
+            return _handle;
         }
 
         private void Update()
@@ -120,7 +122,7 @@ namespace UnityTemplateProjects
             {
                 _sw.Stop();
                 _handle.Complete();
-                Debug.Log($"Complete Chunk in {_sw.ElapsedMilliseconds}ms, Indices: {_indexVertexCounts[0]}, Vertices: {_indexVertexCounts[1]}");
+                // Debug.Log($"Complete Chunk in {_sw.ElapsedMilliseconds}ms, Indices: {_indexVertexCounts[0]}, Vertices: {_indexVertexCounts[1]}");
                 Generating = false;
                 transform.position = new Vector3(Coords.x, 0, Coords.y);
                 

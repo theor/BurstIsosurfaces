@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using Unity.Collections;
+using Unity.Jobs;
 using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -31,6 +33,9 @@ namespace UnityTemplateProjects
         public NativeArray<int> TriTable;
         public NativeArray<Marching.byte2> EdgeConnection;
         public NativeArray<float3> EdgeDirection;
+
+        private Queue<Chunk> _queue;
+        private JobHandle _currentHandle;
         
         private void Start()
         {
@@ -38,6 +43,7 @@ namespace UnityTemplateProjects
             TriTable = Marching.TriTable(Allocator.Persistent);
             EdgeConnection = Marching.EdgeConnection(Allocator.Persistent);
             EdgeDirection = Marching.EdgeDirection(Allocator.Persistent);
+            _queue = new Queue<Chunk>((2 * VoxelSide + 1)*(2 * VoxelSide + 1));
         }
 
         private void OnDestroy()
@@ -50,13 +56,21 @@ namespace UnityTemplateProjects
         
         public void RequestChunk(Chunk chunk, int2 coords)
         {
-            chunk.Generating = true;
             chunk.Coords = coords;
+            _queue.Enqueue(chunk);
+        }
+
+        private void Update()
+        {
+            if (_currentHandle.IsCompleted && _queue.Count > 0)
+            {
+                var chunk = _queue.Dequeue();
+                chunk.Generating = true;
+
+                chunk.OutputMeshData = Mesh.AllocateWritableMeshData(1);
             
-            chunk.OutputMeshData = Mesh.AllocateWritableMeshData(1);
-            
-            
-            chunk.RequestGeneration(coords);
+                _currentHandle = chunk.RequestGeneration();
+            }
         }
 
         public static unsafe bool GetCornerCoords(int3 voxelCoords, int v1, out OctInt coords)
