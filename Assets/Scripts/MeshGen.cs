@@ -162,7 +162,7 @@ namespace UnityTemplateProjects
 
                             ushort edgeMask = EdgeTable[cubeindex];
 
-                            Debug.Log($"{x} {y} {z} mask {edgeMask:X}");
+                            // Debug.Log($"{x} {y} {z} mask {edgeMask:X}");
                             if(edgeMask == 0)
                                 continue;
 
@@ -171,8 +171,11 @@ namespace UnityTemplateProjects
                                 //if there is an intersection on this edge
                                 if ((edgeMask & (1 << i)) != 0)
                                 {
-                                    var offset = 0.5f * delta;
                                     Marching.byte2 conn = EdgeConnection[i];
+                                    var offset = 
+                                        // 0.5f
+                                        (Isolevel - voxelDentities[conn.x])/(voxelDentities[conn.y] - voxelDentities[conn.x])  
+                                        * delta;
                                     edgePoints[i] = new float3(
                                         (x + vertexOffsets[conn.x].x)*delta + offset * EdgeDirection[i].x,  
                                         (y + vertexOffsets[conn.x].y)*delta + offset * EdgeDirection[i].y,  
@@ -283,9 +286,17 @@ namespace UnityTemplateProjects
 
         private static float Density(float3 coords)
         {
-            // return .25f - coords.z;
+            // return .25f - coords.z; // plane
+            
+            float3 warp = noise.srdnoise(coords.xy * .008f, coords.z* .008f).xyz;
+            coords += warp * .08f;
+            return noise.snoise(coords * 4.03f) * .25f +
+                   noise.snoise(coords * 1.96f) * .5f +
+                   noise.snoise(coords * 1.01f) * 1f;
 
-            return math.distance(coords, new float3(.5f)) - .25f;
+            return coords.y - ((math.sin(coords.x * 10) + math.cos(coords.z * 10)) * .1f + .25f);
+
+            // return math.distance(coords, new float3(.5f)) - .25f; // sphere
             // return .5f - math.distance(coords, new float3(.5f,.5f,.5f));
         }
     }

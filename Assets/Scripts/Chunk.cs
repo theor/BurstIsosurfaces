@@ -104,7 +104,7 @@ namespace UnityTemplateProjects
                 new VertexAttributeDescriptor(VertexAttribute.Normal, stream: 1));
             this._handle.Complete();
             this._handle = job.Schedule(h);
-            Debug.Log($"Generate {coords} max vert {maxVertexCount} max indices {maxIndexCount}");
+            // Debug.Log($"Generate {coords} max vert {maxVertexCount} max indices {maxIndexCount}");
             _sw = Stopwatch.StartNew();
         }
 
@@ -114,7 +114,7 @@ namespace UnityTemplateProjects
             {
                 _sw.Stop();
                 _handle.Complete();
-                Debug.Log($"Complete Chunk in {_sw.ElapsedMilliseconds}ms, Indices: {_indexVertexCounts[0]}, Vertices: {_indexVertexCounts[1]}");
+                // Debug.Log($"Complete Chunk in {_sw.ElapsedMilliseconds}ms, Indices: {_indexVertexCounts[0]}, Vertices: {_indexVertexCounts[1]}");
                 Generating = false;
                 transform.position = new Vector3(Coords.x, 0, Coords.y);
                 
@@ -128,9 +128,9 @@ namespace UnityTemplateProjects
 
                 var meshData = OutputMeshData[0];
                 meshData.subMeshCount = 1;
-                meshData.SetSubMesh(0, sm, MeshUpdateFlags.DontRecalculateBounds);
+                meshData.SetSubMesh(0, sm, MeshUpdateFlags.DontRecalculateBounds | MeshUpdateFlags.DontValidateIndices | MeshUpdateFlags.DontNotifyMeshUsers);
                 Mesh.bounds = sm.bounds;
-                Mesh.ApplyAndDisposeWritableMeshData(OutputMeshData, Mesh, MeshUpdateFlags.DontRecalculateBounds);
+                Mesh.ApplyAndDisposeWritableMeshData(OutputMeshData, Mesh, MeshUpdateFlags.DontRecalculateBounds | MeshUpdateFlags.DontValidateIndices | MeshUpdateFlags.DontNotifyMeshUsers);
             }
         }
     }
