@@ -73,7 +73,7 @@ namespace UnityTemplateProjects
         public void RequestGeneration(int2 coords)
         {
             var densityCount = (_meshGen.VoxelSide + 1)*(_meshGen.VoxelSide + 1)*(_meshGen.VoxelSide + 1);
-            var djob = new MeshGen.DensityJob
+            var djob = new DensityJob
             {
                 VoxelSide = _meshGen.VoxelSide,
                 Coords = coords,
@@ -81,7 +81,7 @@ namespace UnityTemplateProjects
             };
 
             var h = djob.Schedule(densityCount, 16);
-            var job = new MeshGen.GenJob
+            var job = new GenJob
             {
                 Densities = _densities,
                 VoxelSide = _meshGen.VoxelSide,
