@@ -16,17 +16,23 @@ namespace UnityTemplateProjects
 
         public NativeArray<ushort> EdgeTable;
         public NativeArray<int> TriTable;
+        public NativeArray<Marching.byte2> EdgeConnection;
+        public NativeArray<float3> EdgeDirection;
 
         private void Start()
         {
             EdgeTable = Marching.EdgeTable(Allocator.Persistent);
             TriTable = Marching.TriTable(Allocator.Persistent);
+            EdgeConnection = Marching.EdgeConnection(Allocator.Persistent);
+            EdgeDirection = Marching.EdgeDirection(Allocator.Persistent);
         }
 
         private void OnDestroy()
         {
             EdgeTable.Dispose();
             TriTable.Dispose();
+            EdgeDirection.Dispose();
+            EdgeConnection.Dispose();
         }
 
         public  struct OctInt
@@ -100,6 +106,8 @@ namespace UnityTemplateProjects
             public float Isolevel;
             public NativeArray<ushort> EdgeTable;
             public NativeArray<int> TriTable;
+            public NativeArray<Marching.byte2> EdgeConnection;
+            public NativeArray<float3> EdgeDirection;
 
             public unsafe void Execute()
             {
@@ -110,8 +118,21 @@ namespace UnityTemplateProjects
                 var v1 = VoxelSide + 1;
 
                 int v = 0;
-                int i = 0;
+                int ind = 0;
                 var delta = 1f / VoxelSide;
+                var delta1 = 1f / v1;
+                
+                float3* edgePoints = stackalloc float3[12];
+                     
+                Marching.byte3* vertexOffsets = stackalloc Marching.byte3[8];
+                vertexOffsets[0] = new Marching.byte3(0, 0, 0);
+                vertexOffsets[1] = new Marching.byte3(1, 0, 0);
+                vertexOffsets[2] = new Marching.byte3(1, 0, 1);
+                vertexOffsets[3] = new Marching.byte3(0, 0, 1);
+                vertexOffsets[4] = new Marching.byte3(0, 1, 0);
+                vertexOffsets[5] = new Marching.byte3(1, 1, 0);
+                vertexOffsets[6] = new Marching.byte3(1, 1, 1);
+                vertexOffsets[7] = new Marching.byte3(0, 1, 1);
                 
                 for (int x = 0; x < VoxelSide; x++)
                 {
@@ -140,23 +161,55 @@ namespace UnityTemplateProjects
                             if (voxelDentities[7] < Isolevel) cubeindex |= 128;
 
                             ushort edgeMask = EdgeTable[cubeindex];
+
+                            Debug.Log($"{x} {y} {z} mask {edgeMask:X}");
                             if(edgeMask == 0)
                                 continue;
-                            
-                            
+
+                            for (int i = 0; i < 12; i++)
+                            {
+                                //if there is an intersection on this edge
+                                if ((edgeMask & (1 << i)) != 0)
+                                {
+                                    var offset = 0.5f * delta;
+                                    Marching.byte2 conn = EdgeConnection[i];
+                                    edgePoints[i] = new float3(
+                                        (x + vertexOffsets[conn.x].x)*delta + offset * EdgeDirection[i].x,  
+                                        (y + vertexOffsets[conn.x].y)*delta + offset * EdgeDirection[i].y,  
+                                        (z + vertexOffsets[conn.x].z)*delta + offset * EdgeDirection[i].z  
+                                    );
+                                }
+                                else
+                                    edgePoints[i] = default;
+                            }
+
+                            for (int i = 0; i < 5; i++)
+                            {
+                                if(TriTable[cubeindex*16 + 3*i] < 0)
+                                    break;
+                                for (int j = 0; j < 3; j++)
+                                {
+                                    var vert = TriTable[cubeindex * 16 + 3 * i + j];
+                                    outputTris[ind++] = v;
+                                    outputVerts[v] = edgePoints[vert];
+                                    outputNormals[v] = new float3(0, 1, 0);
+                                    v++;
+                                }
+                            }
+
                             // if(coordsY < math.sin(coordsX) + math.cos(coordsZ))
-                                CreateCube(ref v, ref i, x, y, z);
+                                // CreateCube(ref v, ref ind, x, y, z);
                         }
                     }
                 }
 
-                IndexVertexCounts[0] = i;
+                IndexVertexCounts[0] = ind;
                 IndexVertexCounts[1] = v;
                 // for (int j = i; j < outputTris.Length; j++)
                 // {
                 //     outputTris[j] = 0;
                 // }
-                UnsafeUtility.MemClear((int*)outputTris.GetUnsafePtr()+i, UnsafeUtility.SizeOf<int>()* (outputTris.Length - i));
+                UnsafeUtility.MemClear((int*)outputTris.GetUnsafePtr()+ind, UnsafeUtility.SizeOf<int>()* (outputTris.Length - ind));
 
                 void AddQuad(ref int v, ref int i, float3 tl, float3 tr, float3 bl, float3 br)
                 {
@@ -230,7 +283,10 @@ namespace UnityTemplateProjects
 
         private static float Density(float3 coords)
         {
-            return .5f - math.distance(coords, new float3(.5f,.5f,.5f));
+            // return .25f - coords.z;
+
+            return math.distance(coords, new float3(.5f)) - .25f;
+            // return .5f - math.distance(coords, new float3(.5f,.5f,.5f));
         }
     }
 }

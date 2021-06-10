@@ -90,6 +90,9 @@ namespace UnityTemplateProjects
                 IndexVertexCounts = this._indexVertexCounts,
                 EdgeTable = _meshGen.EdgeTable,
                 TriTable = _meshGen.TriTable,
+                EdgeConnection = _meshGen.EdgeConnection,
+                EdgeDirection = _meshGen.EdgeDirection,
+                
             };
             var maxCubeCount = _meshGen.VoxelSide * _meshGen.VoxelSide * _meshGen.VoxelSide;
             var maxTriCount = maxCubeCount * 6 /*faces*/ * 2 /*tri per face*/;

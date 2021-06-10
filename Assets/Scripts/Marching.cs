@@ -1,11 +1,79 @@
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
+using Unity.Mathematics;
 using UnityEngine.Assertions;
 
 namespace UnityTemplateProjects
 {
-    static class Marching
+    public static class Marching
     {
+        public struct byte2
+        {
+            public byte x;
+            public byte y;
+
+            public byte2(byte x, byte y)
+            {
+                this.x = x;
+                this.y = y;
+            }
+        }
+        public struct byte3
+        {
+            public byte x;
+            public byte y;
+            public byte z;
+
+            public byte3(byte x, byte y, byte z)
+            {
+                this.x = x;
+                this.y = y;
+                this.z = z;
+            }
+        }
+
+        public static NativeArray<float3> EdgeDirection(Allocator allocator)
+        {
+            var a = new NativeArray<float3>(12, allocator)
+            {
+                [0] = new float3(1.0f, 0.0f, 0.0f),
+                [1] = new float3(0.0f, 0.0f, 1.0f),
+                [2] = new float3(-1.0f, 0.0f, 0.0f),
+                [3] = new float3(0.0f, 0.0f, -1.0f),
+                [4] = new float3(1.0f, 0.0f, 0.0f),
+                [5] = new float3(0.0f, 0.0f, 1.0f),
+                [6] = new float3(-1.0f, 0.0f, 0.0f),
+                [7] = new float3(0.0f, 0.0f, -1.0f),
+                [8] = new float3(0.0f, 1.0f, 0.0f),
+                [9] = new float3(0.0f, 1.0f, 0.0f),
+                [10] = new float3(0.0f, 1.0f, 0.0f),
+                [11] = new float3(0.0f, 1.0f, 0.0f)
+            };
+
+            return a;
+        }
+        public static NativeArray<byte2> EdgeConnection(Allocator allocator)
+        {
+            NativeArray<byte2> edgeConnection = new NativeArray<byte2>(12, allocator)
+            {
+                [0] = new byte2(0, 1),
+                [1] = new byte2(1, 2),
+                [2] = new byte2(2, 3),
+                [3] = new byte2(3, 0),
+                [4] = new byte2(4, 5),
+                [5] = new byte2(5, 6),
+                [6] = new byte2(6, 7),
+                [7] = new byte2(7, 4),
+                [8] = new byte2(0, 4),
+                [9] = new byte2(1, 5),
+                [10] = new byte2(2, 6),
+                [11] = new byte2(3, 7)
+            };
+
+
+            return edgeConnection;
+        }
+
         public static NativeArray<ushort> EdgeTable(Allocator allocator)
         {
             var a = new ushort[]
