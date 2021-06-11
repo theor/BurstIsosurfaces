@@ -80,15 +80,17 @@ namespace UnityTemplateProjects
                     _densities.Dispose();
                 _densities = new NativeArray<float>(densityCount, Allocator.Persistent);
             }
+            _handle.Complete();
             var djob = new DensityJob
             {
                 VoxelSide = _meshGen.VoxelSide,
                 Coords = Coords,
                 Densities = _densities,
+                Eval = _meshGen.DensityFormula.MakeEval()
             };
 
-            _handle.Complete();
-            var h = djob.ScheduleParallel(densityCount, 256, default);
+            // var h = djob.ScheduleParallel(densityCount, 256, default);
+            var h = djob.Schedule(densityCount,_handle);
             var job = new GenJob
             {
                 Densities = _densities,
@@ -111,8 +113,8 @@ namespace UnityTemplateProjects
             job.OutputMesh.SetVertexBufferParams(maxVertexCount,
                 new VertexAttributeDescriptor(VertexAttribute.Position),
                 new VertexAttributeDescriptor(VertexAttribute.Normal, stream: 1, format: VertexAttributeFormat.Float16, dimension: 4));
-            this._handle.Complete();
             this._handle = job.Schedule(h);
+            djob.Eval.Dispose(_handle);
             // Debug.Log($"Generate {Coords} max vert {maxVertexCount} max indices {maxIndexCount}");
             _sw = Stopwatch.StartNew();
             return _handle;

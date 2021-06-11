@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.Serialization;
 using NUnit.Framework;
+using UnityEngine;
 
 namespace ShuntingYard
 {
@@ -11,7 +12,7 @@ namespace ShuntingYard
         public void Test()
         {
             Console.WriteLine(Formatter.Format(new BinOp(OpType.Add,
-                new BinOp(OpType.Mul, new Value(1), new Value(2)), new Value(3))));
+                new BinOp(OpType.Mul, new ExpressionValue(1), new ExpressionValue(2)), new ExpressionValue(3))));
         }
 
         [TestCase("3+4", "(3 + 4)", 7f)]
@@ -29,8 +30,8 @@ namespace ShuntingYard
         [TestCase("3+-4", "(3 + -4)", 3+-4f)]
         [TestCase("-(3+4)", "-(3 + 4)", -(3+4f))]
         // coma
-        [TestCase("1,2", "(1 , 2)")]
-        [TestCase("1,2,3", "(1 , (2 , 3))")]
+        // [TestCase("1,2", "(1 , 2)")]
+        // [TestCase("1,2,3", "(1 , (2 , 3))")]
         // func calls
         [TestCase("sqrt(64)", "sqrt(64)", 8f)]
         [TestCase("min(42, 43)", "min(42, 43)", 42f)]
@@ -45,9 +46,13 @@ namespace ShuntingYard
         [TestCase("tan(tan(11%10))", "tan(tan((11 % 10)))", 74.6860046f)]
         public void Parse(string input, string expectedFormat, float? result = null)
         {
-            INode parsed = Parser.Parse(input);
+            INode parsed = Parser.Parse(input, out var err);
+            if (!string.IsNullOrEmpty(err))
+            {
+                Debug.Log(err);
+            }
             var format = Formatter.Format(parsed);
-            Console.WriteLine(format);
+            Debug.Log(format);
             Assert.AreEqual(expectedFormat, format);
             if(result.HasValue)
                 Assert.AreEqual(result.Value, Evaluator.Eval(parsed, new Dictionary<string, float>{{"a", 7f}}));
@@ -60,7 +65,7 @@ namespace ShuntingYard
         [TestCase("1*a", "1 * a")]
         [TestCase("(32+4)", "( 32 + 4 )")]
         [TestCase("(32+4)*1", "( 32 + 4 ) * 1")]
-        [TestCase("1,2", "1 , 2")]
+        // [TestCase("1,2", "1 , 2")]
         public void Tokenizer_Works(string input, string spaceSeparatedTokens)
         {
             var reader = new Reader(input);

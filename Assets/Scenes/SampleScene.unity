@@ -499,6 +499,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   VoxelSide: 1
+  DensityFormula: {fileID: 0}
 --- !u!4 &1299440074
 Transform:
   m_ObjectHideFlags: 0
@@ -793,7 +794,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Target: {fileID: 1435971622}
   Material: {fileID: 2100000, guid: 6ed680514c08b694aaf98cbc244b833f, type: 2}
-  ChunkDist: 3
+  ChunkDist: 0
 --- !u!4 &1474798335
 Transform:
   m_ObjectHideFlags: 0
@@ -821,7 +822,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 256e3a5e19fb4885a601406a0a1acd17, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  VoxelSide: 16
+  VoxelSide: 4
+  DensityFormula: {fileID: 1896026015}
 --- !u!1001 &1556901916
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1038,6 +1040,24 @@ MonoBehaviour:
   m_RequiresDepthTexture: 0
   m_RequiresColorTexture: 0
   m_Version: 2
+--- !u!114 &1896026015
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8e6efdeb283a4f318f6a2b3fd4272e57, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  Input: y(coords) - 0.25
+  Params:
+  - Name: coords
+    Value: {x: 0, y: 0, z: 0}
+  - Name: coords
+    Value: {x: 0, y: 0, z: 0}
 --- !u!1 &1904166338
 GameObject:
   m_ObjectHideFlags: 0

@@ -30,6 +30,8 @@ namespace UnityTemplateProjects
         [Range(1, 16)]
         public int VoxelSide = 1;
 
+        public Formula DensityFormula;
+
         public NativeArray<ushort> EdgeTable;
         public NativeArray<int> TriTable;
         public NativeArray<Marching.byte2> EdgeConnection;
@@ -37,7 +39,14 @@ namespace UnityTemplateProjects
 
         private Queue<Chunk> _queue;
         private JobHandle _currentHandle;
-        
+        public Eval DensityFormulaEvaluator { get; private set; }
+
+        private void Reset()
+        {
+            if (!DensityFormula)
+                DensityFormula = Formula.CreateInstance<Formula>();
+        }
+
         private void Start()
         {
             EdgeTable = Marching.EdgeTable(Allocator.Persistent);
@@ -45,10 +54,12 @@ namespace UnityTemplateProjects
             EdgeConnection = Marching.EdgeConnection(Allocator.Persistent);
             EdgeDirection = Marching.EdgeDirection(Allocator.Persistent);
             _queue = new Queue<Chunk>((2 * VoxelSide + 1)*(2 * VoxelSide + 1));
+            DensityFormulaEvaluator = DensityFormula.MakeEval();
         }
 
         private void OnDestroy()
         {
+            DensityFormulaEvaluator.Dispose();
             EdgeTable.Dispose();
             TriTable.Dispose();
             EdgeDirection.Dispose();
@@ -126,6 +137,7 @@ namespace UnityTemplateProjects
 
         public static float Density(float3 coords)
         {
+            return coords.y - 0.25f;
             // return .25f - coords.z; // plane
             float persistence = 1;
             int octaves = 5;

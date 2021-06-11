@@ -1,0 +1,75 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using ShuntingYard;
+using Unity.Mathematics;
+using UnityEditor;
+using UnityEngine;
+
+namespace UnityTemplateProjects
+{
+    [Serializable]
+    public class Formula : ScriptableObject
+    {
+        [Delayed]
+        public string Input;
+        public List<FormulaParam> Params;
+
+        private Dictionary<string, int> Variables;
+        private Eval.Node[] Parsed;
+        private string _error;
+
+        public void OnEnable()
+        {
+            bool cleanup =
+            #if UNITY_EDITOR
+                !UnityEditor.EditorApplication.isPlaying;
+            #else
+                false;
+            #endif
+            if (Variables == null)
+            {
+                Variables = new Dictionary<string, int>();
+                cleanup = true;
+            }
+            var root = Parser.Parse(Input, out _error);
+            if (root == null)
+                return;
+            Parsed = Translator.Translate(root, Variables, null);
+            foreach (var keyValuePair in Variables.OrderBy(x => x.Value))
+            {
+                while(Params.Count <= keyValuePair.Value)
+                    Params.Add(default);
+                var formulaParam = Params[keyValuePair.Value];
+                formulaParam.Name = keyValuePair.Key;
+                Params[keyValuePair.Value] = formulaParam;
+            }
+
+            if (cleanup)
+            {
+                Params.RemoveAll(p => !Variables.ContainsKey(p.Name));
+                HashSet<string> names = new HashSet<string>();
+                for (var i = 0; i < Params.Count; i++)
+                {
+                    if (!names.Add(Params[i].Name))
+                    {
+                        Params.RemoveAt(i--);
+                    }
+                }
+            }
+        }
+
+        public Eval MakeEval()
+        {
+            OnEnable();
+            return new Eval(Parsed, Params.Select(x => (float3) x.Value).ToArray());
+        }
+    }
+
+    [Serializable]
+    public struct FormulaParam
+    {
+        public string Name;
+        public Vector3 Value;
+    }
+}
