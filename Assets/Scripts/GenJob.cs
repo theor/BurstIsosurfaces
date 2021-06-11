@@ -11,7 +11,7 @@ namespace UnityTemplateProjects
     public struct GenJob : IJob
     {
         public Mesh.MeshData OutputMesh;
-        public int2 Coords;
+        public int3 Coords;
         public int VoxelSide;
         public float Isolevel;
         [WriteOnly]
@@ -59,10 +59,10 @@ namespace UnityTemplateProjects
                 var coordsX = (Coords.x + x*delta);
                 for (int y = 0; y < VoxelSide; y++)
                 {
-                    var coordsY = (y*delta);
+                    var coordsY = (Coords.y + y*delta);
                     for (int z = 0; z < VoxelSide; z++)
                     {
-                        var coordsZ = (Coords.y + z * delta);
+                        var coordsZ = (Coords.z + z * delta);
                         var coords = new int3(x, y, z);
 
                         MeshGen.GetCornerCoords(coords, v1, out var corners);

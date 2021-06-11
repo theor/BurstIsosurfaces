@@ -14,7 +14,7 @@ namespace UnityTemplateProjects
 {
     public class Chunk : MonoBehaviour
     {
-        public int2 Coords;
+        public int3 Coords;
         public Mesh Mesh;
         public bool Generating;
         public Mesh.MeshDataArray OutputMeshData;
@@ -38,7 +38,7 @@ namespace UnityTemplateProjects
                     var coords = MeshGen.IndexToCoords(i, v1);
                     var d = _densities[i];
                     Gizmos.color = d < 0 ? Color.black : Color.green;
-                    Gizmos.DrawWireSphere((float3)coords*delta + new float3(Coords.x, 0, Coords.y), delta/2);
+                    Gizmos.DrawWireSphere((float3)coords*delta + Coords, delta/2);
                 }
             }
         }
@@ -51,7 +51,7 @@ namespace UnityTemplateProjects
         private void Start()
         {
             _indexVertexCounts = new NativeArray<int>(2, Allocator.Persistent);
-            Coords = new int2(int.MaxValue, int.MaxValue);
+            Coords = new int3(int.MaxValue);
             Mesh = new Mesh();
             GetComponent<MeshFilter>().sharedMesh = Mesh;
         }
@@ -88,7 +88,7 @@ namespace UnityTemplateProjects
             };
 
             _handle.Complete();
-            var h = djob.ScheduleParallel(densityCount, 4096, default);
+            var h = djob.ScheduleParallel(densityCount, 256, default);
             var job = new GenJob
             {
                 Densities = _densities,
@@ -126,7 +126,7 @@ namespace UnityTemplateProjects
                 _handle.Complete();
                 // Debug.Log($"Complete Chunk in {_sw.ElapsedMilliseconds}ms, Indices: {_indexVertexCounts[0]}, Vertices: {_indexVertexCounts[1]}");
                 Generating = false;
-                transform.position = new Vector3(Coords.x, 0, Coords.y);
+                transform.position = new Vector3(Coords.x, Coords.y, Coords.z);
                 
                 var sm = new SubMeshDescriptor(0, _indexVertexCounts[0], MeshTopology.Triangles)
                 {

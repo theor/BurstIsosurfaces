@@ -55,7 +55,7 @@ namespace UnityTemplateProjects
             EdgeConnection.Dispose();
         }
         
-        public void RequestChunk(Chunk chunk, int2 coords)
+        public void RequestChunk(Chunk chunk, int3 coords)
         {
             chunk.Coords = coords;
             _queue.Enqueue(chunk);

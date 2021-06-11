@@ -14,17 +14,17 @@ namespace UnityTemplateProjects
         private MeshGen _meshGen;
         private List<Chunk> _chunks;
         private List<Chunk> _freeChunks;
-        private int2 Coords;
+        private int3 Coords;
 
         public int ChunkDist = 1;
 
         private void Start()
         {
-            Coords = new int2(Int32.MaxValue);
+            Coords = new int3(Int32.MaxValue);
             _meshGen = GetComponent<MeshGen>();
 
             var chunkCount = 2 * ChunkDist + 1;
-            chunkCount *= chunkCount;
+            chunkCount = chunkCount * chunkCount * chunkCount;
             _freeChunks = new List<Chunk>(chunkCount);
             _chunks = new List<Chunk>(chunkCount);
             for (int i = 0; i < chunkCount; i++)
@@ -40,7 +40,8 @@ namespace UnityTemplateProjects
 
         private void Update()
         {
-            int2 cur = new int2((int) math.floor(Target.position.x), (int) math.floor(Target.position.z));
+            var position = Target.position;
+            int3 cur = new int3((int) math.floor(position.x), (int) math.floor(position.y), (int) math.floor(position.z));
             if (!Coords.Equals(cur))
             {
                 Coords = cur;
@@ -48,7 +49,7 @@ namespace UnityTemplateProjects
                 {
                     var chunk = _chunks[index];
                     var d = math.abs(chunk.Coords - Coords);
-                    if (d.x > ChunkDist || d.y > ChunkDist)
+                    if (d.x > ChunkDist || d.y > ChunkDist || d.z > ChunkDist)
                     {
                         _freeChunks.Add(chunk);
                         _chunks.RemoveAt(index);
@@ -58,8 +59,9 @@ namespace UnityTemplateProjects
 
                 for (var x = -ChunkDist; x <= ChunkDist; x++)
                 for (var y = -ChunkDist; y <= ChunkDist; y++)
+                for (var z = -ChunkDist; z <= ChunkDist; z++)
                 {
-                    var offset = new int2(x,y);
+                    var offset = new int3(x,y,z);
                     bool found = false;
                     for (var index = 0; index < _chunks.Count; index++)
                     {

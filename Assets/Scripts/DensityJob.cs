@@ -9,7 +9,7 @@ namespace UnityTemplateProjects
     public struct DensityJob : IJobFor
     {
         public int VoxelSide;
-        public int2 Coords;
+        public int3 Coords;
         [WriteOnly]
         public NativeArray<float> Densities;
         public void Execute(int index)
@@ -17,7 +17,7 @@ namespace UnityTemplateProjects
             var delta = 1f / VoxelSide;
             var v1 = VoxelSide + 1;
             // array is xxx zzz yyy
-            float3 coords = (float3)MeshGen.IndexToCoords(index, v1) * delta + new float3(Coords.x, 0, Coords.y);
+            float3 coords = (float3)MeshGen.IndexToCoords(index, v1) * delta + Coords;
             float d = MeshGen.Density(coords);
             Densities[index] = d;
         }
