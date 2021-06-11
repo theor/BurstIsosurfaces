@@ -89,8 +89,8 @@ namespace UnityTemplateProjects
                 Eval = _meshGen.DensityFormula.MakeEval()
             };
 
-            // var h = djob.ScheduleParallel(densityCount, 256, default);
-            var h = djob.Schedule(densityCount,_handle);
+            var h = djob.ScheduleParallel(densityCount, 256, default);
+            // var h = djob.Schedule(densityCount,_handle);
             var job = new GenJob
             {
                 Densities = _densities,

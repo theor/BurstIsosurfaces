@@ -39,17 +39,21 @@ public class ParsingEvaluationTests : EvaluationTestsBase
 
 public class EvaluationTestsBase
 {
-    protected void Run(float3 result, IEnumerable<Eval.Node> nodes, params float3[] @params)
+    protected unsafe void Run(float3 result, IEnumerable<Eval.Node> nodes, params float3[] @params)
     {
         EvalJob j = default;
         try
         {
-            j = new EvalJob
+            fixed (float3* paramsPtr = @params)
             {
-                Eval = new Eval(nodes.ToArray(), @params),
-                Result = new NativeReference<float3>(Allocator.TempJob)
-            };
-            j.Run();
+                j = new EvalJob
+                {
+                    Eval = new Eval(nodes.ToArray(), @params),
+                    Result = new NativeReference<float3>(Allocator.TempJob),
+                    Params = paramsPtr,
+                };
+                j.Run();
+            }
         }
         catch (Exception)
         {

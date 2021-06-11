@@ -15,19 +15,21 @@ namespace UnityTemplateProjects
         [WriteOnly]
         public NativeArray<float> Densities;
 
+        // public bool Code;
+
+        [ReadOnly]
         public Eval Eval;
-        public void Execute(int index)
+        public unsafe void Execute(int index)
         {
             var delta = 1f / VoxelSide;
             var v1 = VoxelSide + 1;
             // array is xxx zzz yyy
             float3 coords = (float3)MeshGen.IndexToCoords(index, v1) * delta + Coords;
-            Eval.Params[0] = coords;
-            float d = 
-                Eval.Run().x;
+            float d =
+                new EvalState().Run(Eval, &coords).x;
                 // MeshGen.Density(coords);
             Densities[index] = d;
-            Debug.Log(string.Format("{0}: {1}", index, d));
+            // Debug.Log(string.Format("{0}: {1}", index, d));
         }
     }
 }
