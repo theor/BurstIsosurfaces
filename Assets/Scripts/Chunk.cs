@@ -86,7 +86,7 @@ namespace UnityTemplateProjects
                 VoxelSide = _meshGen.VoxelSide,
                 Coords = Coords,
                 Densities = _densities,
-                Eval = _meshGen.DensityFormula.MakeEval()
+                EvalGraph = _meshGen.DensityFormulaEvaluator
             };
 
             var h = djob.ScheduleParallel(densityCount, 256, default);
@@ -114,7 +114,6 @@ namespace UnityTemplateProjects
                 new VertexAttributeDescriptor(VertexAttribute.Position),
                 new VertexAttributeDescriptor(VertexAttribute.Normal, stream: 1, format: VertexAttributeFormat.Float16, dimension: 4));
             this._handle = job.Schedule(h);
-            djob.Eval.Dispose(_handle);
             // Debug.Log($"Generate {Coords} max vert {maxVertexCount} max indices {maxIndexCount}");
             _sw = Stopwatch.StartNew();
             return _handle;

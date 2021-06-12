@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using Unity.Collections;
 using Unity.Jobs;
@@ -39,7 +40,9 @@ namespace UnityTemplateProjects
 
         private Queue<Chunk> _queue;
         private JobHandle _currentHandle;
-        public Eval DensityFormulaEvaluator { get; private set; }
+        private uint4 _lastHash;
+        [NonSerialized]
+        public EvalGraph DensityFormulaEvaluator;
 
         private void Reset()
         {
@@ -54,7 +57,7 @@ namespace UnityTemplateProjects
             EdgeConnection = Marching.EdgeConnection(Allocator.Persistent);
             EdgeDirection = Marching.EdgeDirection(Allocator.Persistent);
             _queue = new Queue<Chunk>((2 * VoxelSide + 1)*(2 * VoxelSide + 1));
-            DensityFormulaEvaluator = DensityFormula.MakeEval();
+            // DensityFormula.MakeEval(ref _lastHash, out DensityFormulaEvaluator);
         }
 
         private void OnDestroy()
@@ -66,23 +69,39 @@ namespace UnityTemplateProjects
             EdgeConnection.Dispose();
         }
         
-        public void RequestChunk(Chunk chunk, int3 coords)
+        public void RequestChunk(Chunk chunk, int3 coords, bool forceImmediate = false)
         {
             chunk.Coords = coords;
-            _queue.Enqueue(chunk);
+            if (forceImmediate)
+            {
+                _currentHandle = JobHandle.CombineDependencies(_currentHandle, GenerateChunk(chunk));
+            }
+            else
+                _queue.Enqueue(chunk);
         }
 
         private void Update()
         {
             if (_currentHandle.IsCompleted && _queue.Count > 0)
             {
-                var chunk = _queue.Dequeue();
-                chunk.Generating = true;
+                // Stopwatch sw = Stopwatch.StartNew();
 
-                chunk.OutputMeshData = Mesh.AllocateWritableMeshData(1);
-            
-                _currentHandle = chunk.RequestGeneration();
+                // while (_queue.Count > 0 && sw.ElapsedMilliseconds < 8)
+                {
+                    var chunk = _queue.Dequeue();
+                    
+                    _currentHandle = GenerateChunk(chunk);
+                    // _currentHandle = JobHandle.CombineDependencies(_currentHandle, chunk.RequestGeneration());
+                }
             }
+        }
+
+        private static JobHandle GenerateChunk(Chunk chunk)
+        {
+            chunk.Generating = true;
+            chunk.OutputMeshData = Mesh.AllocateWritableMeshData(1);
+
+            return chunk.RequestGeneration();
         }
 
         public static unsafe bool GetCornerCoords(int3 voxelCoords, int v1, out OctInt coords)
@@ -119,22 +138,6 @@ namespace UnityTemplateProjects
             return coords.x + coords.y * v1 * v1 + coords.z * v1;
         }
 
-        private static float fbm(float3 pos, float persistence, int octaves, float lacunarity)
-        {
-            float g = math.exp2(-persistence);
-            float f = 1.0f;
-            float a = 1.0f;
-            float t = 0.0f;
-            for (int i = 0; i < octaves; i++)
-            {
-                t += a * noise.snoise(f * pos);
-                f *= lacunarity;
-                a *= g;
-            }
-
-            return t;
-        }
-
         public static float Density(float3 coords)
         {
             return coords.y - 0.25f;
@@ -143,7 +146,7 @@ namespace UnityTemplateProjects
             int octaves = 5;
             float lacunarity = .5f;
             coords *= .5f;
-            return fbm(coords + fbm(coords, persistence, octaves, lacunarity), persistence, octaves, lacunarity);
+            return Fbm.fbm(coords + Fbm.fbm(coords, persistence, octaves, lacunarity), persistence, octaves, lacunarity);
             
             
             float3 warp = noise.srdnoise(coords.xy * .008f, coords.z* .008f).xyz;
@@ -156,7 +159,17 @@ namespace UnityTemplateProjects
             // return coords.y - ((math.sin(coords.x * 10) + math.cos(coords.z * 10)) * .1f + .25f);
 
             // return math.distance(coords, new float3(.5f)) - .25f; // sphere
-            // return .5f - math.distance(coords, new float3(.5f,.5f,.5f));
+            // return 0.5f - math.distance(coords, new float3(.5f,.5f,.5f));
+        }
+
+        public bool DensityFormulaChanged()
+        {
+            if (!DensityFormula.Dirty)
+                return false;
+            DensityFormula.Dirty = false;
+            var changed = DensityFormula.MakeEval(ref _lastHash, ref DensityFormulaEvaluator);
+            // Debug.Log($"Update formula {changed}\n{DensityFormula.Input}");
+            return changed;
         }
     }
 }

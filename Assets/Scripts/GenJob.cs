@@ -96,6 +96,14 @@ namespace UnityTemplateProjects
                                     // 0.5f
                                     (Isolevel - voxelDentities[conn.x])/(voxelDentities[conn.y] - voxelDentities[conn.x])  
                                     * delta;
+                                
+                                // compute the two normals at x,y,z and x',y',z'
+                                // 'coords are xyz+edgeDirection as int
+                                // n = normalize(n1+n2)
+                                // n1, n2: gradient on 3 axis
+                                // cheap gradient if the density grid has a padding of 1 
+                                
+                                
                                 edgePoints[i] = new float3(
                                     (x + vertexOffsets[conn.x].x)*delta + offset * EdgeDirection[i].x,  
                                     (y + vertexOffsets[conn.x].y)*delta + offset * EdgeDirection[i].y,  

@@ -40,6 +40,15 @@ namespace UnityTemplateProjects
 
         private void Update()
         {
+            
+            if (_meshGen.DensityFormulaChanged())
+            {
+                for (var i = 0; i < _chunks.Count; i++)
+                {
+                    _meshGen.RequestChunk(_chunks[i], _chunks[i].Coords, true);
+                }
+            }
+            
             var position = Target.position;
             int3 cur = new int3((int) math.floor(position.x), (int) math.floor(position.y), (int) math.floor(position.z));
             if (!Coords.Equals(cur))

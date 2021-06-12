@@ -1,53 +1,37 @@
 using System;
 using Unity.Burst;
 using Unity.Collections;
-using Unity.Collections.LowLevel.Unsafe;
-using Unity.Jobs;
 using Unity.Mathematics;
 using UnityEngine.Assertions;
 
 namespace UnityTemplateProjects
 {
     [BurstCompile]
-    public struct EvalJob : IJob
-    {
-        public Eval Eval;
-        public NativeReference<float3> Result;
-        [NativeDisableUnsafePtrRestriction]
-        public unsafe float3* Params;
-        public unsafe void Execute()
-        {
-            EvalState state = new EvalState();
-            Result.Value = state.Run(Eval, Params);
-        }
-    }
-
-    [BurstCompile]
     public struct EvalState
     {
-        private NativeList<float3> Stack;
+        private NativeList<float3> _stack;
         
         private int _current;
         
         private float3 Pop()
         {
-            var elt = Stack[Stack.Length - 1];
-            Stack.RemoveAt(Stack.Length-1);
+            var elt = _stack[_stack.Length - 1];
+            _stack.RemoveAt(_stack.Length-1);
             return elt;
         }
 
         private void Push(float3 val)
         {
-            Stack.Add(val);
+            _stack.Add(val);
         }
         
         [BurstCompile]
-        public unsafe float3 Run(in Eval graph,  float3* @params)
+        public unsafe float3 Run(in EvalGraph graph,  float3* @params)
         {
-            using (Stack = new NativeList<float3>(10, Allocator.Temp))
+            using (_stack = new NativeList<float3>(10, Allocator.Temp))
             {
                 _current = 0;
-                Stack.Clear();
+                _stack.Clear();
                 while (_current < graph.Nodes.Length)
                 {
                     var node = graph.Nodes[_current];
@@ -92,6 +76,15 @@ namespace UnityTemplateProjects
                         case Op.Tan:
                             Push(math.tan(Pop()));
                             break;
+                        case Op.Dist:
+                            Push(math.distance(Pop(),Pop()));
+                            break;
+                        case Op.SqDist:
+                            Push(math.distancesq(Pop(),Pop()));
+                            break;
+                        case Op.Fbm:
+                            Push(Fbm.fbm(Pop(),Pop().x,(int) Pop().x,Pop().x));
+                            break;
                         case Op.CNoise:
                             Push(noise.cnoise(Pop()));
                             break;
@@ -109,67 +102,10 @@ namespace UnityTemplateProjects
                     _current++;
                 }
 
-                Assert.AreEqual(1, Stack.Length);
-                return Stack[0];
+                Assert.AreEqual(1, _stack.Length);
+                return _stack[0];
             }
         }
         
-    }
-    public struct Eval : IDisposable
-    {
-        public struct Node
-        {
-            public Op Op;
-            public float3 Val;
-            public int Index;
-
-            public Node(Op op, float3 val = default)
-            {
-                Op = op;
-                Val = val;
-                Index = 0;
-            }
-
-            public Node(Op op, int index)
-            {
-                Op = op;
-                Val = default;
-                Index = index;
-            }
-        }
-        public NativeArray<Node> Nodes;
-        
-
-        public Eval(Node[] nodes, float3[] @params)
-        {
-            Nodes = new NativeArray<Node>(nodes, Allocator.Persistent);
-        }
-
-     
-
-        public void Dispose() => Dispose(default);
-        public void Dispose(JobHandle handle)
-        {
-            if (Nodes.IsCreated)
-            {
-                Nodes.Dispose(handle);
-            }
-        }
-    }
-
-    public enum Op
-    {
-        None,
-        Const,
-        Param,
-        Add,Sub,
-        Mul,Div,
-        Mod,
-        Minus,
-        X,Y,Z,
-        Sin,Cos,Tan,
-        CNoise,
-        SNoise,
-        SRDNoise
     }
 }

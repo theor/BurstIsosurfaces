@@ -26,12 +26,12 @@ public class ParsingEvaluationTests : EvaluationTestsBase
     }
 
     [TestCaseSource(nameof(Cases))]
-    public void ParseRunTest(float3 result, string input, float3[] @params) => ParseRun(result, input, new Dictionary<string, int>(), @params);
+    public void ParseRunTest(float3 result, string input, float3[] @params) => ParseRun(result, input, new Dictionary<string, byte>(), @params);
 
     [Test]
     public void PreserveParamsMultipleExecutions()
     {
-        var variables = new Dictionary<string, int>();
+        var variables = new Dictionary<string, byte>();
         ParseRun(1, "a", variables, 1,2);
         ParseRun(2, "b", variables, 1,2);
     }
@@ -39,7 +39,7 @@ public class ParsingEvaluationTests : EvaluationTestsBase
 
 public class EvaluationTestsBase
 {
-    protected unsafe void Run(float3 result, IEnumerable<Eval.Node> nodes, params float3[] @params)
+    protected unsafe void Run(float3 result, IEnumerable<EvalGraph.Node> nodes, params float3[] @params)
     {
         EvalJob j = default;
         try
@@ -48,7 +48,7 @@ public class EvaluationTestsBase
             {
                 j = new EvalJob
                 {
-                    Eval = new Eval(nodes.ToArray(), @params),
+                    EvalGraph = new EvalGraph(nodes.ToArray()),
                     Result = new NativeReference<float3>(Allocator.TempJob),
                     Params = paramsPtr,
                 };
@@ -57,7 +57,7 @@ public class EvaluationTestsBase
         }
         catch (Exception)
         {
-            j.Eval.Dispose();
+            j.EvalGraph.Dispose();
             j.Result.Dispose();
             throw;
         }
@@ -66,7 +66,7 @@ public class EvaluationTestsBase
         Assert.AreEqual(result, j.Result.Value);
     }
 
-    protected void ParseRun(float3 result, string input, Dictionary<string, int> variables, params float3[] @params)
+    protected void ParseRun(float3 result, string input, Dictionary<string, byte> variables, params float3[] @params)
     {
         var n = Parser.Parse(input, out var err);
         Assert.IsNull(err, err);
@@ -82,7 +82,7 @@ public class EvaluationTests : EvaluationTestsBase
     [Test]
     public void ConstFloat3()
     {
-        Run(new float3(1, 2, 3), new[] {new Eval.Node(Op.Const, new float3(1, 2, 3))});
+        Run(new float3(1, 2, 3), new[] {new EvalGraph.Node(Op.Const, new float3(1, 2, 3))});
     }
 
     [Test]
@@ -90,9 +90,9 @@ public class EvaluationTests : EvaluationTestsBase
     {
         Run(new float3(1, 2, 3), new[]
         {
-            new Eval.Node(Op.Param, 0),
-            new Eval.Node(Op.Param, 1),
-            new Eval.Node(Op.Add),
+            EvalGraph.Node.Param(0),
+            EvalGraph.Node.Param(1),
+            new EvalGraph.Node(Op.Add),
         }, new float3(1, 2, 0), new float3(0, 0, 3));
     }
 
@@ -101,9 +101,9 @@ public class EvaluationTests : EvaluationTestsBase
     {
         Run(new float3(5, 7, 9), new[]
         {
-            new Eval.Node(Op.Const, new float3(1, 2, 3)),
-            new Eval.Node(Op.Const, new float3(4, 5, 6)),
-            new Eval.Node(Op.Add),
+            new EvalGraph.Node(Op.Const, new float3(1, 2, 3)),
+            new EvalGraph.Node(Op.Const, new float3(4, 5, 6)),
+            new EvalGraph.Node(Op.Add),
         });
     }
 
@@ -112,9 +112,9 @@ public class EvaluationTests : EvaluationTestsBase
     {
         Run(new float3(2), new[]
         {
-            new Eval.Node(Op.Const, 3f),
-            new Eval.Node(Op.Const, 6f),
-            new Eval.Node(Op.Div),
+            new EvalGraph.Node(Op.Const, 3f),
+            new EvalGraph.Node(Op.Const, 6f),
+            new EvalGraph.Node(Op.Div),
         });
     }
 }

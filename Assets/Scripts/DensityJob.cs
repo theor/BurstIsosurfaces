@@ -18,7 +18,7 @@ namespace UnityTemplateProjects
         // public bool Code;
 
         [ReadOnly]
-        public Eval Eval;
+        public EvalGraph EvalGraph;
         public unsafe void Execute(int index)
         {
             var delta = 1f / VoxelSide;
@@ -26,7 +26,7 @@ namespace UnityTemplateProjects
             // array is xxx zzz yyy
             float3 coords = (float3)MeshGen.IndexToCoords(index, v1) * delta + Coords;
             float d =
-                new EvalState().Run(Eval, &coords).x;
+                new EvalState().Run(EvalGraph, &coords).x;
                 // MeshGen.Density(coords);
             Densities[index] = d;
             // Debug.Log(string.Format("{0}: {1}", index, d));

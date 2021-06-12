@@ -11,16 +11,18 @@ namespace UnityTemplateProjects
     [Serializable]
     public class Formula : ScriptableObject
     {
-        [Delayed]
+        [Delayed, Multiline]
         public string Input;
         public List<FormulaParam> Params;
 
-        private Dictionary<string, int> Variables;
-        private Eval.Node[] Parsed;
+        private Dictionary<string, byte> Variables;
+        private EvalGraph.Node[] Parsed;
         private string _error;
+        public bool Dirty { get; set; }
 
         public void OnEnable()
         {
+            Dirty = true;
             bool cleanup =
             #if UNITY_EDITOR
                 !UnityEditor.EditorApplication.isPlaying;
@@ -29,7 +31,7 @@ namespace UnityTemplateProjects
             #endif
             if (Variables == null)
             {
-                Variables = new Dictionary<string, int>();
+                Variables = new Dictionary<string, byte>();
                 cleanup = true;
             }
             var root = Parser.Parse(Input, out _error);
@@ -59,10 +61,18 @@ namespace UnityTemplateProjects
             }
         }
 
-        public Eval MakeEval()
+        public bool MakeEval(ref uint4 hash, ref EvalGraph evalGraph)
         {
             OnEnable();
-            return new Eval(Parsed, Params.Select(x => (float3) x.Value).ToArray());
+            var newHash = EvalGraph.Hash(Parsed);
+            if (!newHash.Equals(hash))
+            {
+                hash = newHash;
+                evalGraph = new EvalGraph(Parsed);
+                 return true;
+            }
+
+            return false;
         }
     }
 

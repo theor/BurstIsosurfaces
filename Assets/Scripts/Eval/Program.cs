@@ -118,18 +118,18 @@ namespace ShuntingYard
 
     public static class Translator
     {
-        public static Eval.Node[] Translate(INode node, Dictionary<string, int> variables, float3[] @params)
+        public static EvalGraph.Node[] Translate(INode node, Dictionary<string, byte> variables, float3[] @params)
         {
-            List<Eval.Node> nodes = new List<Eval.Node>();
+            List<EvalGraph.Node> nodes = new List<EvalGraph.Node>();
             Rec(nodes, variables, node);
             return nodes.ToArray();
         }
 
-        private static void Rec(List<Eval.Node> nodes, Dictionary<string, int> variables, INode node)
+        private static void Rec(List<EvalGraph.Node> nodes, Dictionary<string, byte> variables, INode node)
         {
-            int GetNewIndex()
+            byte GetNewIndex()
             {
-                int i = 0;
+                byte i = 0;
                 while (variables.ContainsValue(i))
                     i++;
                 return i;
@@ -137,20 +137,19 @@ namespace ShuntingYard
             switch (node)
             {
                 case ExpressionValue v:
-                    nodes.Add(new Eval.Node(Op.Const, v.F));
+                    nodes.Add(new EvalGraph.Node(Op.Const, v.F));
                     break;
                 case Variable variable:
                     if(!variables.TryGetValue(variable.Id, out var idx))
                         variables.Add(variable.Id, idx = GetNewIndex());
-                    nodes.Add(new Eval.Node(Op.Param, idx));
+                    nodes.Add(EvalGraph.Node.Param(idx));
                     break;
-                //     return variables[variable.Id];
                 case UnOp u:
                     Rec(nodes, variables, u.A);
                     if(u.Type == OpType.Plus)
                         break;
                     if(u.Type == OpType.Minus)
-                        nodes.Add(new Eval.Node(Op.Minus));
+                        nodes.Add(new EvalGraph.Node(Op.Minus));
                     else
                         throw new NotImplementedException(u.Type.ToString());
                     break;
@@ -158,7 +157,7 @@ namespace ShuntingYard
                     // reverse order
                     Rec(nodes, variables, bin.B);
                     Rec(nodes, variables, bin.A);
-                    nodes.Add(new Eval.Node(bin.Type switch
+                    nodes.Add(new EvalGraph.Node(bin.Type switch
                     {
                         OpType.Add => Op.Add,
                         OpType.Sub => Op.Sub,
@@ -181,27 +180,51 @@ namespace ShuntingYard
                 {
                     case "x":
                         CheckArgCount(1);
-                        nodes.Add(new Eval.Node(Op.X));
+                        nodes.Add(new EvalGraph.Node(Op.X));
                         break;
                     case "y":
                         CheckArgCount(1);
-                        nodes.Add(new Eval.Node(Op.Y));
+                        nodes.Add(new EvalGraph.Node(Op.Y));
                         break;
                     case "z":
                         CheckArgCount(1);
-                        nodes.Add(new Eval.Node(Op.Z));
+                        nodes.Add(new EvalGraph.Node(Op.Z));
                         break;
                     case "cnoise":
                         CheckArgCount(1);
-                        nodes.Add(new Eval.Node(Op.CNoise));
+                        nodes.Add(new EvalGraph.Node(Op.CNoise));
                         break;
                     case "snoise":
                         CheckArgCount(1);
-                        nodes.Add(new Eval.Node(Op.SNoise));
+                        nodes.Add(new EvalGraph.Node(Op.SNoise));
                         break;
                     case "srdnoise":
                         CheckArgCount(1);
-                        nodes.Add(new Eval.Node(Op.SRDNoise));
+                        nodes.Add(new EvalGraph.Node(Op.SRDNoise));
+                        break;
+                    case "dist":
+                        CheckArgCount(2);
+                        nodes.Add(new EvalGraph.Node(Op.Dist));
+                        break;
+                    case "sqdist":
+                        CheckArgCount(2);
+                        nodes.Add(new EvalGraph.Node(Op.SqDist));
+                        break;
+                    case "sin":
+                        CheckArgCount(1);
+                        nodes.Add(new EvalGraph.Node(Op.Sin));
+                        break;
+                    case "cos":
+                        CheckArgCount(1);
+                        nodes.Add(new EvalGraph.Node(Op.Cos));
+                        break;
+                    case "tan":
+                        CheckArgCount(1);
+                        nodes.Add(new EvalGraph.Node(Op.Tan));
+                        break;
+                    case "fbm":
+                        CheckArgCount(4);
+                        nodes.Add(new EvalGraph.Node(Op.Fbm));
                         break;
                     // case "f3": case "v3":
                     // nodes.Add();
