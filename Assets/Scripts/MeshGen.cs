@@ -104,16 +104,16 @@ namespace UnityTemplateProjects
             return chunk.RequestGeneration();
         }
 
-        public static unsafe bool GetCornerCoords(int3 voxelCoords, int v1, out OctInt coords)
+        public static unsafe bool GetCornerCoords(int3 voxelCoords, int v2, out OctInt coords)
         {
-            coords.Value[0] = CoordsToIndex(voxelCoords, v1);
+            coords.Value[0] = CoordsToIndex(voxelCoords, v2);
             coords.Value[1] = coords.Value[0] + 1; // +x
-            coords.Value[2] = coords.Value[1] + v1; // +z
+            coords.Value[2] = coords.Value[1] + v2; // +z
             coords.Value[3] = coords.Value[2] - 1; // -x
-            coords.Value[4] = coords.Value[0] + v1*v1; // +y
-            coords.Value[5] = coords.Value[1] + v1*v1; // +y
-            coords.Value[6] = coords.Value[2] + v1*v1; // +y
-            coords.Value[7] = coords.Value[3] + v1*v1; // +y
+            coords.Value[4] = coords.Value[0] + v2*v2; // +y
+            coords.Value[5] = coords.Value[1] + v2*v2; // +y
+            coords.Value[6] = coords.Value[2] + v2*v2; // +y
+            coords.Value[7] = coords.Value[3] + v2*v2; // +y
             return true;
         }
 
@@ -127,16 +127,17 @@ namespace UnityTemplateProjects
         public static int3 IndexToCoords(int index, int v1)
         {
             return new int3(
-                index % v1,
-                index / (v1 * v1),
-                ((index % (v1 * v1)) / v1)
+                (index % v1) - 1,
+                index / (v1 * v1) - 1,
+                ((index % (v1 * v1)) / v1) - 1
             );
         }
 
         public static int CoordsToIndex(int3 coords, int v1)
         {
-            return coords.x + coords.y * v1 * v1 + coords.z * v1;
+            return (coords.x + 1) + (coords.y + 1) * v1 * v1 + (coords.z + 1) * v1;
         }
+
 
         public static float Density(float3 coords)
         {

@@ -18,7 +18,6 @@ namespace UnityTemplateProjects.Editor
             base.OnInspectorGUI();
             _drawOne = EditorGUILayout.Toggle("Draw one voxel", _drawOne);
 
-            if (_drawOne)
             {
                 _voxelCoords = EditorGUILayout.Vector3IntField("Coords", _voxelCoords);
             }
@@ -28,25 +27,48 @@ namespace UnityTemplateProjects.Editor
         [DrawGizmo(GizmoType.Selected)]
         static void DrawMeshGen(MeshGen meshGen, GizmoType type)
         {
+            var v1 = meshGen.VoxelSide + 1;
+            var v2 = meshGen.VoxelSide + 2;
+            var v3 = meshGen.VoxelSide + 3;
             if (_drawOne)
             {
-                var v1 = meshGen.VoxelSide + 1;
-                if (_voxelCoords.x < 0 || _voxelCoords.y < 0 || _voxelCoords.z < 0 ||
-                    _voxelCoords.x >= meshGen.VoxelSide || _voxelCoords.y >= meshGen.VoxelSide ||
-                    _voxelCoords.z >= meshGen.VoxelSide)
+                if (_voxelCoords.x < -1 || _voxelCoords.y < -1 || _voxelCoords.z < -1 ||
+                    _voxelCoords.x > meshGen.VoxelSide || _voxelCoords.y > meshGen.VoxelSide ||
+                    _voxelCoords.z > meshGen.VoxelSide)
                     return;
                 var delta = 1 / (float) meshGen.VoxelSide;
                 Gizmos.DrawWireCube((Vector3)_voxelCoords * delta + Vector3.one* delta*.5f,  Vector3.one * delta*.9f);
 
                 var i3Coords = new int3(_voxelCoords.x, _voxelCoords.y, _voxelCoords.z);
-                MeshGen.GetCornerCoords(i3Coords, v1, out var coords);
+                MeshGen.GetCornerCoords(i3Coords, v3, out var coords);
                 for (int i = 0; i < 8; i++)
                 {
-                    var indexToCoords = MeshGen.IndexToCoords(coords[i], v1);
+                    var indexToCoords = MeshGen.IndexToCoords(coords[i], v3);
                     GUIStyle style = new GUIStyle();
                     style.normal.textColor = Color.green;
                     Handles.Label((Vector3)(float3)indexToCoords * delta, $"{i} {coords[i]} {indexToCoords}", style);
                 }
+            }
+            else
+            {
+                // for (int i = -meshGen.VoxelSide; i < 2*meshGen.VoxelSide; i++)
+                for (int x = -1; x < v1; x++)
+                for (int y = -1; y < v1; y++)
+                for (int z = -1; z < v1; z++)
+                {
+                    var delta = 1 / (float) meshGen.VoxelSide;
+                    Gizmos.DrawWireCube(((Vector3) _voxelCoords + new Vector3(x, y, z)) * delta + Vector3.one* delta*.5f,  Vector3.one * delta*.9f);
+                    var i3Coords = new int3(_voxelCoords.x+x, _voxelCoords.y+y, _voxelCoords.z+z);
+                    MeshGen.GetCornerCoords(i3Coords, v3, out var coords);
+                    for (int i = 0; i < 8; i++)
+                    {
+                        var indexToCoords = MeshGen.IndexToCoords(coords[i], v3);
+                        GUIStyle style = new GUIStyle();
+                        style.normal.textColor = Color.green;
+                        Handles.Label((Vector3)(float3)indexToCoords * delta, $"{i} {coords[i]} {indexToCoords}", style);
+                    }
+                }
+                
             }
         }
 

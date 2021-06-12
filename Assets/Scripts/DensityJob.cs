@@ -23,13 +23,14 @@ namespace UnityTemplateProjects
         {
             var delta = 1f / VoxelSide;
             var v1 = VoxelSide + 1;
+            var v3 = VoxelSide + 3;
             // array is xxx zzz yyy
-            float3 coords = (float3)MeshGen.IndexToCoords(index, v1) * delta + Coords;
+            float3 coords = (float3)MeshGen.IndexToCoords(index, v3) * delta + Coords;
             float d =
                 new EvalState().Run(EvalGraph, &coords).x;
                 // MeshGen.Density(coords);
             Densities[index] = d;
-            // Debug.Log(string.Format("{0}: {1}", index, d));
+            // Debug.Log(string.Format("{0} at {1}: {2}", index, coords, d));
         }
     }
 }

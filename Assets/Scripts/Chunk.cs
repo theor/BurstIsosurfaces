@@ -73,7 +73,7 @@ namespace UnityTemplateProjects
 
         public JobHandle RequestGeneration()
         {
-            var densityCount = (_meshGen.VoxelSide + 1)*(_meshGen.VoxelSide + 1)*(_meshGen.VoxelSide + 1);
+            var densityCount = (_meshGen.VoxelSide + 3)*(_meshGen.VoxelSide + 3)*(_meshGen.VoxelSide + 3);
             if(!_densities.IsCreated || _densities.Length != densityCount)
             {
                 if (_densities.IsCreated)

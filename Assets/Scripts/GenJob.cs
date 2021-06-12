@@ -36,11 +36,11 @@ namespace UnityTemplateProjects
             var outputTris = OutputMesh.GetIndexData<int>();
 
             var v1 = VoxelSide + 1;
+            var v3 = VoxelSide + 3;
 
             int v = 0;
             int ind = 0;
             var delta = 1f / VoxelSide;
-            var delta1 = 1f / v1;
                 
             float3* edgePoints = stackalloc float3[12];
                      
@@ -65,20 +65,20 @@ namespace UnityTemplateProjects
                         var coordsZ = (Coords.z + z * delta);
                         var coords = new int3(x, y, z);
 
-                        MeshGen.GetCornerCoords(coords, v1, out var corners);
+                        MeshGen.GetCornerCoords(coords, v3, out var corners);
 
-                        MeshGen.OctFloat voxelDentities;
-                        for (int j = 0; j < 8; j++) voxelDentities[j] = Densities[corners[j]];
+                        MeshGen.OctFloat voxelDensities;
+                        for (int j = 0; j < 8; j++) voxelDensities[j] = Densities[corners[j]];
                             
                         byte cubeindex = 0;
-                        if (voxelDentities[0] < Isolevel) cubeindex |= 1;
-                        if (voxelDentities[1] < Isolevel) cubeindex |= 2;
-                        if (voxelDentities[2] < Isolevel) cubeindex |= 4;
-                        if (voxelDentities[3] < Isolevel) cubeindex |= 8;
-                        if (voxelDentities[4] < Isolevel) cubeindex |= 16;
-                        if (voxelDentities[5] < Isolevel) cubeindex |= 32;
-                        if (voxelDentities[6] < Isolevel) cubeindex |= 64;
-                        if (voxelDentities[7] < Isolevel) cubeindex |= 128;
+                        if (voxelDensities[0] < Isolevel) cubeindex |= 1;
+                        if (voxelDensities[1] < Isolevel) cubeindex |= 2;
+                        if (voxelDensities[2] < Isolevel) cubeindex |= 4;
+                        if (voxelDensities[3] < Isolevel) cubeindex |= 8;
+                        if (voxelDensities[4] < Isolevel) cubeindex |= 16;
+                        if (voxelDensities[5] < Isolevel) cubeindex |= 32;
+                        if (voxelDensities[6] < Isolevel) cubeindex |= 64;
+                        if (voxelDensities[7] < Isolevel) cubeindex |= 128;
 
                         ushort edgeMask = EdgeTable[cubeindex];
 
@@ -94,7 +94,7 @@ namespace UnityTemplateProjects
                                 Marching.byte2 conn = EdgeConnection[i];
                                 var offset = 
                                     // 0.5f
-                                    (Isolevel - voxelDentities[conn.x])/(voxelDentities[conn.y] - voxelDentities[conn.x])  
+                                    (Isolevel - voxelDensities[conn.x])/(voxelDensities[conn.y] - voxelDensities[conn.x])  
                                     * delta;
                                 
                                 // compute the two normals at x,y,z and x',y',z'
