@@ -1,21 +1,23 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Runtime.CompilerServices;
 using Unity.Collections;
 using Unity.Jobs;
 using Unity.Mathematics;
 using UnityEngine;
-using UnityEngine.Rendering;
 
 namespace UnityTemplateProjects
 {
     public class MeshGen : MonoBehaviour
     {
-        public  struct OctInt
+        public unsafe struct OctInt
         {
-            public unsafe fixed int Value[8];
-            public unsafe int this[int i] => Value[i];
+            public fixed int Value[8];
+            public int this[int i] => Value[i];
+
+            public override string ToString()
+            {
+                return $"{Value[0]} {Value[1]} {Value[2]} {Value[3]} {Value[4]} {Value[5]} {Value[6]} {Value[7]}";
+            }
         }
         
         public unsafe struct OctFloat
@@ -25,6 +27,11 @@ namespace UnityTemplateProjects
             {
                 get { return Value[i]; }
                 set { Value[i] = value; }
+            }
+
+            public override string ToString()
+            {
+                return $"{Value[0]:F2} {Value[1]:F2} {Value[2]:F2} {Value[3]:F2} {Value[4]:F2} {Value[5]:F2} {Value[6]:F2} {Value[7]:F2}";
             }
         }
         
@@ -122,14 +129,14 @@ namespace UnityTemplateProjects
         /// IndexToCoords
         /// </summary>
         /// <param name="index"></param>
-        /// <param name="v1">VoxelSide + 1</param>
+        /// <param name="v3">VoxelSide + 1</param>
         /// <returns></returns>
-        public static int3 IndexToCoords(int index, int v1)
+        public static int3 IndexToCoords(int index, int v3)
         {
             return new int3(
-                (index % v1) - 1,
-                index / (v1 * v1) - 1,
-                ((index % (v1 * v1)) / v1) - 1
+                (index % v3) - 1,
+                index / (v3 * v3) - 1,
+                ((index % (v3 * v3)) / v3) - 1
             );
         }
 
@@ -141,25 +148,26 @@ namespace UnityTemplateProjects
 
         public static float Density(float3 coords)
         {
-            return coords.y - 0.25f;
+            // return noise.srdnoise(coords.xy * 0.5f, coords.z * 0.5f).x;
+            // return coords.y - 0.25f;
             // return .25f - coords.z; // plane
-            float persistence = 1;
-            int octaves = 5;
-            float lacunarity = .5f;
-            coords *= .5f;
-            return Fbm.fbm(coords + Fbm.fbm(coords, persistence, octaves, lacunarity), persistence, octaves, lacunarity);
-            
-            
-            float3 warp = noise.srdnoise(coords.xy * .008f, coords.z* .008f).xyz;
-            coords += warp * .08f;
-            return 
-                math.min(coords.y - .5f, noise.snoise(coords * 4.03f) * .25f +
-                                                                     noise.snoise(coords * 1.96f) * .5f +
-                                                                     noise.snoise(coords * .601f) * 1f);
+            // float persistence = 1;
+            // int octaves = 5;
+            // float lacunarity = .5f;
+            // coords *= .5f;
+            // return Fbm.fbm(coords + Fbm.fbm(coords, persistence, octaves, lacunarity), persistence, octaves, lacunarity);
+            //
+            //
+            // float3 warp = noise.srdnoise(coords.xy * .008f, coords.z* .008f).xyz;
+            // coords += warp * .08f;
+            // return 
+            //     math.min(coords.y - .5f, noise.snoise(coords * 4.03f) * .25f +
+            //                                                          noise.snoise(coords * 1.96f) * .5f +
+            //                                                          noise.snoise(coords * .601f) * 1f);
 
             // return coords.y - ((math.sin(coords.x * 10) + math.cos(coords.z * 10)) * .1f + .25f);
 
-            // return math.distance(coords, new float3(.5f)) - .25f; // sphere
+            return 1.25f - math.distance(coords, new float3(.5f)); // sphere
             // return 0.5f - math.distance(coords, new float3(.5f,.5f,.5f));
         }
 

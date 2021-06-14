@@ -4,6 +4,7 @@ using Unity.Collections;
 using Unity.Jobs;
 using Unity.Mathematics;
 using UnityEngine;
+using UnityEngine.Assertions;
 
 namespace UnityTemplateProjects
 {
@@ -25,10 +26,13 @@ namespace UnityTemplateProjects
             var v1 = VoxelSide + 1;
             var v3 = VoxelSide + 3;
             // array is xxx zzz yyy
-            float3 coords = (float3)MeshGen.IndexToCoords(index, v3) * delta + Coords;
+            // world space
+            var local = MeshGen.IndexToCoords(index, v3);
+            Assert.AreEqual(index, MeshGen.CoordsToIndex(local, v3));
+            float3 coords = (float3)local * delta + Coords;
             float d =
-                new EvalState().Run(EvalGraph, &coords).x;
-                // MeshGen.Density(coords);
+                // new EvalState().Run(EvalGraph, &coords).x;
+                MeshGen.Density(coords);
             Densities[index] = d;
             // Debug.Log(string.Format("{0} at {1}: {2}", index, coords, d));
         }

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Security.Cryptography;
 using Unity.Collections;
@@ -26,19 +27,21 @@ namespace UnityTemplateProjects
 
         private MeshGen _meshGen;
 
-        private void OnDrawGizmos()
+        private void OnDrawGizmosSelected()
         {
             if (_densities.IsCreated && _handle.IsCompleted)
             {
                 _handle.Complete();
-                var v1 = _meshGen.VoxelSide + 1;
+                var v3 = _meshGen.VoxelSide + 3;
                 var delta = 1 /(float) _meshGen.VoxelSide;
-                for (int i = 0; i < v1*v1*v1; i++)
+                for (int i = 0; i < _densities.Length; i++)
                 {
-                    var coords = MeshGen.IndexToCoords(i, v1);
+                    var coords = MeshGen.IndexToCoords(i, v3);
                     var d = _densities[i];
                     Gizmos.color = d < 0 ? Color.black : Color.green;
-                    Gizmos.DrawWireSphere((float3)coords*delta + Coords, delta/2);
+                    var vector3 = (float3)Coords + (float3)coords*delta;
+                    Gizmos.DrawSphere(vector3, delta/16);
+                    Handles.Label(vector3, $"{vector3} {i}  {d:F2}");
                 }
             }
         }
@@ -112,7 +115,7 @@ namespace UnityTemplateProjects
             var maxVertexCount = maxIndexCount;// maxCubeCount * 6 * 4;
             job.OutputMesh.SetVertexBufferParams(maxVertexCount,
                 new VertexAttributeDescriptor(VertexAttribute.Position),
-                new VertexAttributeDescriptor(VertexAttribute.Normal, stream: 1, format: VertexAttributeFormat.Float16, dimension: 4));
+                new VertexAttributeDescriptor(VertexAttribute.Normal, stream: 1));
             this._handle = job.Schedule(h);
             // Debug.Log($"Generate {Coords} max vert {maxVertexCount} max indices {maxIndexCount}");
             _sw = Stopwatch.StartNew();
@@ -142,6 +145,13 @@ namespace UnityTemplateProjects
                 meshData.SetSubMesh(0, sm, MeshUpdateFlags.DontRecalculateBounds | MeshUpdateFlags.DontValidateIndices | MeshUpdateFlags.DontNotifyMeshUsers);
                 Mesh.bounds = sm.bounds;
                 Mesh.ApplyAndDisposeWritableMeshData(OutputMeshData, Mesh, MeshUpdateFlags.DontRecalculateBounds | MeshUpdateFlags.DontValidateIndices | MeshUpdateFlags.DontNotifyMeshUsers);
+                // var n = new List<Vector3>();
+                // Mesh.RecalculateNormals(MeshUpdateFlags.DontNotifyMeshUsers);
+                // Mesh.GetNormals(n);
+                // foreach (var vector3 in n)
+                // {
+                //     Debug.Log(vector3);
+                // }
             }
         }
     }

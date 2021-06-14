@@ -541,7 +541,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1435971621}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0.42, y: 0, z: 0.872}
+  m_LocalPosition: {x: 1.59, y: 1.37, z: 1.96}
   m_LocalScale: {x: 0.3, y: 0.3, z: 0.3}
   m_Children: []
   m_Father: {fileID: 0}
@@ -821,7 +821,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 256e3a5e19fb4885a601406a0a1acd17, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  VoxelSide: 2
+  VoxelSide: 8
   DensityFormula: {fileID: 1896026015}
 --- !u!1001 &1556901916
 PrefabInstance:
@@ -1051,8 +1051,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8e6efdeb283a4f318f6a2b3fd4272e57, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Input: ' dist(coords, 1.5) - (3 + snoise(coords*3) * 0.03 - srdnoise(coords*2)
-    * 0.01)'
+  Input: ' dist(coords, 1.5) - 3'
   Params:
   - Name: coords
     Value: {x: 0, y: 0, z: 0}
@@ -1224,7 +1223,7 @@ Light:
   m_BounceIntensity: 1
   m_ColorTemperature: 6570
   m_UseColorTemperature: 0
-  m_BoundingSphereOverride: {x: 0, y: 0, z: 0, w: -30.629013}
+  m_BoundingSphereOverride: {x: 1.3563156e-19, y: 1.3563156e-19, z: 1.3302705e+37, w: 1.3555849e-19}
   m_UseBoundingSphereOverride: 0
   m_UseViewFrustumForShadowCasterCull: 1
   m_ShadowRadius: 0
