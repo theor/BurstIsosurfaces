@@ -13,6 +13,7 @@ namespace UnityTemplateProjects
     {
         public Mesh.MeshData OutputMesh;
         public int3 Coords;
+        public int Scale;
         public int VoxelSide;
         public float Isolevel;
         [WriteOnly]
@@ -72,7 +73,7 @@ namespace UnityTemplateProjects
 
             int v = 0;
             int ind = 0;
-            var delta = 1f / VoxelSide;
+            var delta = Scale / (float)VoxelSide;
                 
             float3* edgePoints = stackalloc float3[12];
             float3* normals = stackalloc float3[12];

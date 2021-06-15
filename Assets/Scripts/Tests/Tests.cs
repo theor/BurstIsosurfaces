@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Runtime.Serialization;
 using NUnit.Framework;
 using UnityEngine;
+using UnityTemplateProjects;
 
 namespace ShuntingYard
 {
@@ -46,7 +47,7 @@ namespace ShuntingYard
         [TestCase("tan(tan(11%10))", "tan(tan((11 % 10)))", 74.6860046f)]
         public void Parse(string input, string expectedFormat, float? result = null)
         {
-            INode parsed = Parser.Parse(input, out var err);
+            INode parsed = Parser.Parse(input,  out var err);
             if (!string.IsNullOrEmpty(err))
             {
                 Debug.Log(err);

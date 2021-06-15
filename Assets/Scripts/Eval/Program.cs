@@ -118,34 +118,43 @@ namespace ShuntingYard
 
     public static class Translator
     {
-        public static EvalGraph.Node[] Translate(INode node, Dictionary<string, byte> variables, float3[] @params)
+        public static EvalGraph.Node[] Translate(INode node, List<FormulaParam> variables, List<string> parameters)
         {
             List<EvalGraph.Node> nodes = new List<EvalGraph.Node>();
-            Rec(nodes, variables, node);
+            Rec(nodes, variables, node, parameters);
             return nodes.ToArray();
         }
 
-        private static void Rec(List<EvalGraph.Node> nodes, Dictionary<string, byte> variables, INode node)
+        private static void Rec(List<EvalGraph.Node> nodes, List<FormulaParam> variables, INode node,
+            List<string> formulaParams)
         {
-            byte GetNewIndex()
-            {
-                byte i = 0;
-                while (variables.ContainsValue(i))
-                    i++;
-                return i;
-            }
+            
             switch (node)
             {
                 case ExpressionValue v:
                     nodes.Add(new EvalGraph.Node(Op.Const, v.F));
                     break;
                 case Variable variable:
-                    if(!variables.TryGetValue(variable.Id, out var idx))
-                        variables.Add(variable.Id, idx = GetNewIndex());
-                    nodes.Add(EvalGraph.Node.Param(idx));
+                    var paramIndex = formulaParams.IndexOf(variable.Id);
+                    if(paramIndex >= 0)
+                        nodes.Add(EvalGraph.Node.Param((byte) paramIndex));
+                    else
+                    {
+                        var variableParam = new FormulaParam(variable.Id);
+                        var idx = variables.BinarySearch(variableParam, Formula.s_ParamNameComparer);
+
+                        if (idx < 0)
+                        {
+                            variables.Insert(~idx, variableParam);
+                        }
+                        else
+                            variableParam = variables[idx];
+                        nodes.Add(new EvalGraph.Node(Op.Const, variableParam.Value));
+                    }
+
                     break;
                 case UnOp u:
-                    Rec(nodes, variables, u.A);
+                    Rec(nodes, variables, u.A, formulaParams);
                     if(u.Type == OpType.Plus)
                         break;
                     if(u.Type == OpType.Minus)
@@ -155,8 +164,8 @@ namespace ShuntingYard
                     break;
                 case BinOp bin:
                     // reverse order
-                    Rec(nodes, variables, bin.B);
-                    Rec(nodes, variables, bin.A);
+                    Rec(nodes, variables, bin.B, formulaParams);
+                    Rec(nodes, variables, bin.A, formulaParams);
                     nodes.Add(new EvalGraph.Node(bin.Type switch
                     {
                         OpType.Add => Op.Add,
@@ -173,7 +182,7 @@ namespace ShuntingYard
                     Assert.AreEqual(f.Arguments.Count, n);
                     // reverse order
                     for (int i = n - 1; i >= 0; i--)
-                        Rec(nodes, variables, f.Arguments[i]);
+                        Rec(nodes, variables, f.Arguments[i], formulaParams);
                 }
 
                 switch (f.Id)
@@ -303,6 +312,11 @@ namespace ShuntingYard
 
         public static INode Parse(string s, out string error)
         {
+            if (s == null)
+            {
+                error = null;
+                return null;
+            }
             var output = new Stack<INode>();
             var opStack = new Stack<Operator>();
 

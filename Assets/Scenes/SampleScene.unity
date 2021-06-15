@@ -455,6 +455,24 @@ ReflectionProbe:
   m_UseOcclusionCulling: 1
   m_Importance: 1
   m_CustomBakedTexture: {fileID: 0}
+--- !u!114 &1159870182
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8e6efdeb283a4f318f6a2b3fd4272e57, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  Input: a+snoise(coords)-dist(coords,0.5)
+  NamedValues:
+  - Name: a
+    Value: {x: 0.25, y: 3, z: 0}
+  Params:
+  - coords
 --- !u!4 &1278355951
 Transform:
   m_ObjectHideFlags: 0
@@ -541,7 +559,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1435971621}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 1.59, y: 1.37, z: 1.96}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 0.3, y: 0.3, z: 0.3}
   m_Children: []
   m_Father: {fileID: 0}
@@ -794,6 +812,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Target: {fileID: 1435971622}
   Material: {fileID: 2100000, guid: 6ed680514c08b694aaf98cbc244b833f, type: 2}
+  Scale: 1
   ChunkDist: 3
 --- !u!4 &1474798335
 Transform:
@@ -821,8 +840,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 256e3a5e19fb4885a601406a0a1acd17, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  VoxelSide: 8
-  DensityFormula: {fileID: 1896026015}
+  VoxelSide: 16
+  DensityFormula: {fileID: 1159870182}
 --- !u!1001 &1556901916
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1039,22 +1058,6 @@ MonoBehaviour:
   m_RequiresDepthTexture: 0
   m_RequiresColorTexture: 0
   m_Version: 2
---- !u!114 &1896026015
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8e6efdeb283a4f318f6a2b3fd4272e57, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  Input: ' dist(coords, 1.5) - 3'
-  Params:
-  - Name: coords
-    Value: {x: 0, y: 0, z: 0}
 --- !u!1 &1904166338
 GameObject:
   m_ObjectHideFlags: 0
@@ -1223,7 +1226,7 @@ Light:
   m_BounceIntensity: 1
   m_ColorTemperature: 6570
   m_UseColorTemperature: 0
-  m_BoundingSphereOverride: {x: 1.3563156e-19, y: 1.3563156e-19, z: 1.3302705e+37, w: 1.3555849e-19}
+  m_BoundingSphereOverride: {x: 9.043e-42, y: 0, z: 3.4e-44, w: 0.000000040868798}
   m_UseBoundingSphereOverride: 0
   m_UseViewFrustumForShadowCasterCull: 1
   m_ShadowRadius: 0

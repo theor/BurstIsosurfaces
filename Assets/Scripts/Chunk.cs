@@ -26,6 +26,7 @@ namespace UnityTemplateProjects
         private NativeArray<float> _densities;
 
         private MeshGen _meshGen;
+        public int Scale;
 
         private void OnDrawGizmosSelected()
         {
@@ -89,6 +90,7 @@ namespace UnityTemplateProjects
                 VoxelSide = _meshGen.VoxelSide,
                 Coords = Coords,
                 Densities = _densities,
+                Scale = Scale,
                 EvalGraph = _meshGen.DensityFormulaEvaluator
             };
 
@@ -97,6 +99,7 @@ namespace UnityTemplateProjects
             var job = new GenJob
             {
                 Densities = _densities,
+                Scale = Scale,
                 VoxelSide = _meshGen.VoxelSide,
                 OutputMesh = this.OutputMeshData[0],
                 Coords = Coords,
@@ -126,11 +129,11 @@ namespace UnityTemplateProjects
         {
             if (Generating && _handle.IsCompleted)
             {
-                _sw.Stop();
+                _sw?.Stop();
                 _handle.Complete();
                 // Debug.Log($"Complete Chunk in {_sw.ElapsedMilliseconds}ms, Indices: {_indexVertexCounts[0]}, Vertices: {_indexVertexCounts[1]}");
                 Generating = false;
-                transform.position = new Vector3(Coords.x, Coords.y, Coords.z);
+                transform.localPosition = new Vector3(Coords.x, Coords.y, Coords.z);
                 
                 var sm = new SubMeshDescriptor(0, _indexVertexCounts[0], MeshTopology.Triangles)
                 {

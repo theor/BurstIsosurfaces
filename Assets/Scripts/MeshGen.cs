@@ -51,10 +51,14 @@ namespace UnityTemplateProjects
         [NonSerialized]
         public EvalGraph DensityFormulaEvaluator;
 
+
         private void Reset()
         {
             if (!DensityFormula)
+            {
                 DensityFormula = Formula.CreateInstance<Formula>();
+                DensityFormula.SetParameters("coords");
+            }
         }
 
         private void Start()
@@ -76,9 +80,10 @@ namespace UnityTemplateProjects
             EdgeConnection.Dispose();
         }
         
-        public void RequestChunk(Chunk chunk, int3 coords, bool forceImmediate = false)
+        public void RequestChunk(Chunk chunk, int3 coords, int scale, bool forceImmediate = false)
         {
             chunk.Coords = coords;
+            chunk.Scale = scale;
             if (forceImmediate)
             {
                 _currentHandle = JobHandle.CombineDependencies(_currentHandle, GenerateChunk(chunk));
@@ -173,9 +178,6 @@ namespace UnityTemplateProjects
 
         public bool DensityFormulaChanged()
         {
-            if (!DensityFormula.Dirty)
-                return false;
-            DensityFormula.Dirty = false;
             var changed = DensityFormula.MakeEval(ref _lastHash, ref DensityFormulaEvaluator);
             // Debug.Log($"Update formula {changed}\n{DensityFormula.Input}");
             return changed;

@@ -9,6 +9,22 @@ namespace UnityTemplateProjects.Editor
     [CustomPropertyDrawer(typeof(Formula))]
     public class FormulaDrawer : PropertyDrawer
     {
+        public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
+        {
+            int i = 1; // input
+
+            if (property.objectReferenceValue)
+            {
+                var formulaObject = new SerializedObject(property.objectReferenceValue);
+                var namedValues = formulaObject.FindProperty(nameof(Formula.NamedValues));
+                i += namedValues.arraySize;
+                var paramsProp = formulaObject.FindProperty(nameof(Formula.Params));
+                i += paramsProp.arraySize;
+            }
+
+            return EditorGUIUtility.singleLineHeight * i;
+        }
+
         // Draw the property inside the given rect
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {
@@ -19,36 +35,53 @@ namespace UnityTemplateProjects.Editor
             if (property.objectReferenceValue)
             {
                 var formulaObject = new SerializedObject(property.objectReferenceValue);
-                // Draw label
-                // EditorGUILayout.PrefixLabel(label);
+              
+                var rect = new Rect(position.x, position.y, position.width, EditorGUIUtility.singleLineHeight );
+                
 
-                // Don't make child fields be indented
-                // var indent = EditorGUI.indentLevel;
-
-                // Draw fields - passs GUIContent.none to each so they are drawn without labels
                 EditorGUI.BeginChangeCheck();
-                EditorGUILayout.PropertyField(formulaObject.FindProperty(nameof(Formula.Input)), label);
+                EditorGUI.PropertyField(rect,
+                    formulaObject.FindProperty(nameof(Formula.Input)), label); 
                 if (EditorGUI.EndChangeCheck())
                 {
                     Debug.Log("CHANGE");
                     formulaObject.ApplyModifiedProperties();
-                    ((Formula) formulaObject.targetObject).OnEnable();
+                    ((Formula) formulaObject.targetObject).Init(true);
                     formulaObject.Update();
                 }
 
                 EditorGUI.indentLevel++;
+                var namedValues = formulaObject.FindProperty(nameof(Formula.NamedValues));
+                bool enabled = GUI.enabled;
+                GUI.enabled = false;
                 var paramsProp = formulaObject.FindProperty(nameof(Formula.Params));
                 for (int i = 0; i < paramsProp.arraySize; i++)
                 {
                     var elt = paramsProp.GetArrayElementAtIndex(i);
+                    rect.y += EditorGUIUtility.singleLineHeight;
+                    EditorGUI.SelectableLabel(rect, elt.stringValue);
+                }
+                
+                GUI.enabled = enabled;
+                
+                
+                EditorGUI.BeginChangeCheck();
+                for (int i = 0; i < namedValues.arraySize; i++)
+                {
+                    var elt = namedValues.GetArrayElementAtIndex(i);
+                    rect.y += EditorGUIUtility.singleLineHeight;
                     var nameProp = elt.FindPropertyRelative(nameof(FormulaParam.Name));
                     var valProp = elt.FindPropertyRelative(nameof(FormulaParam.Value));
-                    EditorGUILayout.PropertyField(valProp, new GUIContent(nameProp.stringValue));
-                }
-                // EditorGUILayout.PropertyField(paramsProp, new GUIContent("Params"));
+                    EditorGUI.PropertyField(rect, valProp, new GUIContent(nameProp.stringValue));
+                    
 
-                // Set indent back to what it was
-                // EditorGUI.indentLevel = indent;
+                }
+
+                if (EditorGUI.EndChangeCheck())
+                {
+                    formulaObject.ApplyModifiedProperties();
+                    ((Formula) formulaObject.targetObject).Init(false);
+                }
                 EditorGUI.indentLevel--;
             }
             else

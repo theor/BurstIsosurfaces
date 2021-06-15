@@ -16,24 +16,25 @@ public class ParsingEvaluationTests : EvaluationTestsBase
     {
         get
         {
-            TestCaseData F(float3 a, string s, params float3[] @params) => new TestCaseData(a, s, @params);
+            TestCaseData F(float3 a, string s, params (string,float3)[] @params) => new TestCaseData(a, s, @params);
             yield return F(1, "1");
             yield return F(3, "1+2");
-            yield return F(3, "1+x", 2);
-            yield return F(-1, "x(a) - 2", new float3(1,2,3));
-            yield return F(1, "z(a) - 2", new float3(1,2,3));
+            yield return F(3, "1+x", ("x",2));
+            yield return F(-1, "x(a) - 2", ("a", new float3(1,2,3)));
+            yield return F(1, "z(a) - 2", ("a",new float3(1,2,3)));
         }
     }
 
     [TestCaseSource(nameof(Cases))]
-    public void ParseRunTest(float3 result, string input, float3[] @params) => ParseRun(result, input, new Dictionary<string, byte>(), @params);
+    public void ParseRunTest(float3 result, string input, (string,float3)[] @params) =>
+        ParseRun(result, input, new Dictionary<string, float3>(), @params);
 
     [Test]
     public void PreserveParamsMultipleExecutions()
     {
-        var variables = new Dictionary<string, byte>();
-        ParseRun(1, "a", variables, 1,2);
-        ParseRun(2, "b", variables, 1,2);
+        var variables = new Dictionary<string, float3>();
+        ParseRun(1, "a", variables, ("a",1),("b",2));
+        ParseRun(2, "b", variables, ("a",1),("b",2));
     }
 }
 
@@ -66,13 +67,13 @@ public class EvaluationTestsBase
         Assert.AreEqual(result, j.Result.Value);
     }
 
-    protected void ParseRun(float3 result, string input, Dictionary<string, byte> variables, params float3[] @params)
+    protected void ParseRun(float3 result, string input, Dictionary<string, float3> variables, params (string,float3)[] @params)
     {
         var n = Parser.Parse(input, out var err);
         Assert.IsNull(err, err);
-        var nodes = Translator.Translate(n, variables, @params);
+        var nodes = Translator.Translate(n, variables.Select(x => new FormulaParam(x.Key){Value = x.Value}).ToList(), @params.Select(x => x.Item1).ToList());
         Debug.Log(string.Join("\n",variables.Select(x => $"{x.Key}: {x.Value}")));
-        Run(result, nodes, @params);
+        Run(result, nodes, @params.Select(x => x.Item2).ToArray());
     }
 }
 

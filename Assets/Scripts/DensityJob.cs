@@ -13,6 +13,7 @@ namespace UnityTemplateProjects
     {
         public int VoxelSide;
         public int3 Coords;
+        public int Scale;
         [WriteOnly]
         public NativeArray<float> Densities;
 
@@ -20,9 +21,11 @@ namespace UnityTemplateProjects
 
         [ReadOnly]
         public EvalGraph EvalGraph;
+
+
         public unsafe void Execute(int index)
         {
-            var delta = 1f / VoxelSide;
+            var delta = Scale / (float)VoxelSide;
             var v1 = VoxelSide + 1;
             var v3 = VoxelSide + 3;
             // array is xxx zzz yyy
@@ -31,8 +34,8 @@ namespace UnityTemplateProjects
             Assert.AreEqual(index, MeshGen.CoordsToIndex(local, v3));
             float3 coords = (float3)local * delta + Coords;
             float d =
-                // new EvalState().Run(EvalGraph, &coords).x;
-                MeshGen.Density(coords);
+                new EvalState().Run(EvalGraph, &coords).x;
+                // MeshGen.Density(coords);
             Densities[index] = d;
             // Debug.Log(string.Format("{0} at {1}: {2}", index, coords, d));
         }

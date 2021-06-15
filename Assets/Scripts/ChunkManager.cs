@@ -15,6 +15,7 @@ namespace UnityTemplateProjects
         private List<Chunk> _chunks;
         private List<Chunk> _freeChunks;
         private int3 Coords;
+        public int Scale;
 
         public int ChunkDist = 1;
 
@@ -29,7 +30,10 @@ namespace UnityTemplateProjects
             _chunks = new List<Chunk>(chunkCount);
             for (int i = 0; i < chunkCount; i++)
             {
-                var chunk = new GameObject("Chunk"+i, typeof(Chunk),typeof(MeshFilter), typeof(MeshRenderer)).GetComponent<Chunk>();
+                var chunk = new GameObject("Chunk"+i, typeof(Chunk),typeof(MeshFilter), typeof(MeshRenderer), typeof(BoxCollider)).GetComponent<Chunk>();
+                var c = chunk.GetComponent<BoxCollider>();
+                c.center = new Vector3(0.5f, 0.5f, 0.5f)*Scale; 
+                c.size = Vector3.one*Scale; 
                 chunk.transform.SetParent(transform);
                 chunk.GetComponent<MeshRenderer>().sharedMaterial = Material;
                 chunk.Setup(_meshGen);
@@ -45,12 +49,12 @@ namespace UnityTemplateProjects
             {
                 for (var i = 0; i < _chunks.Count; i++)
                 {
-                    _meshGen.RequestChunk(_chunks[i], _chunks[i].Coords, true);
+                    _meshGen.RequestChunk(_chunks[i], _chunks[i].Coords, Scale, true);
                 }
             }
             
             var position = Target.position;
-            int3 cur = new int3((int) math.floor(position.x), (int) math.floor(position.y), (int) math.floor(position.z));
+            int3 cur = new int3((int) math.floor(position.x - Scale/2), (int) math.floor(position.y - Scale/2), (int) math.floor(position.z - Scale/2));
             if (!Coords.Equals(cur))
             {
                 Coords = cur;
@@ -86,7 +90,7 @@ namespace UnityTemplateProjects
                         continue;
                     var freeChunk = _freeChunks[_freeChunks.Count - 1];
                     _freeChunks.RemoveAt(_freeChunks.Count - 1);
-                    _meshGen.RequestChunk(freeChunk, Coords + offset);
+                    _meshGen.RequestChunk(freeChunk, Coords + offset, Scale);
                     _chunks.Add(freeChunk);
                 }
                 

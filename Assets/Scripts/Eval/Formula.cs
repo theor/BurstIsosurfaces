@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using ShuntingYard;
 using Unity.Mathematics;
-using UnityEditor;
 using UnityEngine;
 
 namespace UnityTemplateProjects
@@ -11,68 +10,94 @@ namespace UnityTemplateProjects
     [Serializable]
     public class Formula : ScriptableObject
     {
-        [Delayed, Multiline]
-        public string Input;
-        public List<FormulaParam> Params;
+        public static FormulaParamNameComparer s_ParamNameComparer = new FormulaParamNameComparer();
+        public class FormulaParamNameComparer : IComparer<FormulaParam>
+        {
 
-        private Dictionary<string, byte> Variables;
+            public int Compare(FormulaParam x, FormulaParam y) => string.Compare(x.Name, y.Name, StringComparison.Ordinal);
+        }
+
+        [Delayed]
+        public string Input;
+        public List<FormulaParam> NamedValues;
+        public List<string> Params;
+
         private EvalGraph.Node[] Parsed;
         private string _error;
-        public bool Dirty { get; set; }
+        private int _lastFormulaHashCode;
+        public bool Dirty => _lastFormulaHashCode != (Input?.GetHashCode() ?? 0);
 
         public void OnEnable()
         {
-            Dirty = true;
-            bool cleanup =
-            #if UNITY_EDITOR
-                !UnityEditor.EditorApplication.isPlaying;
-            #else
-                false;
-            #endif
-            if (Variables == null)
-            {
-                Variables = new Dictionary<string, byte>();
-                cleanup = true;
-            }
-            var root = Parser.Parse(Input, out _error);
-            if (root == null)
-                return;
-            Parsed = Translator.Translate(root, Variables, null);
-            foreach (var keyValuePair in Variables.OrderBy(x => x.Value))
-            {
-                while(Params.Count <= keyValuePair.Value)
-                    Params.Add(default);
-                var formulaParam = Params[keyValuePair.Value];
-                formulaParam.Name = keyValuePair.Key;
-                Params[keyValuePair.Value] = formulaParam;
-            }
-
-            if (cleanup)
-            {
-                Params.RemoveAll(p => !Variables.ContainsKey(p.Name));
-                HashSet<string> names = new HashSet<string>();
-                for (var i = 0; i < Params.Count; i++)
-                {
-                    if (!names.Add(Params[i].Name))
-                    {
-                        Params.RemoveAt(i--);
-                    }
-                }
-            }
+            Init(true);
         }
 
+        public void Init(bool force = false)
+        {
+            bool cleanup =
+                force
+#if UNITY_EDITOR
+                || !UnityEditor.EditorApplication.isPlaying
+#endif
+                ;
+
+
+            Debug.Log($"PARSING cleanup={cleanup}");
+            var root = Parser.Parse(Input, out _error);
+            _lastFormulaHashCode = Input?.GetHashCode() ?? 0; 
+            if (root == null)
+                return;
+            Parsed = Translator.Translate(root, NamedValues, Params);
+            if (cleanup)
+            {
+                // for (var index = 0; index < formulaParams.Count; index++)
+                // {
+                //     var p = formulaParams[index];
+                //     int existingValueIndex = NamedValues.BinarySearch(p, s_ParamNameComparer);
+                //     if (existingValueIndex >= 0)
+                //     {
+                //         p.Value = NamedValues[existingValueIndex].Value;
+                //         formulaParams[index] = p;
+                //     }
+                // }
+                //
+                // NamedValues = formulaParams;
+            }
+            _lastGraphHash = EvalGraph.Hash(Parsed);
+            _evalGraph = new EvalGraph(Parsed);
+        }
+
+        private uint4 _lastGraphHash;
+        private EvalGraph _evalGraph;
         public bool MakeEval(ref uint4 hash, ref EvalGraph evalGraph)
         {
-            OnEnable();
-            var newHash = EvalGraph.Hash(Parsed);
-            if (!newHash.Equals(hash))
+            if (!Dirty)
             {
-                hash = newHash;
-                evalGraph = new EvalGraph(Parsed);
-                 return true;
+                var changed = !hash.Equals(_lastGraphHash);
+                hash = _lastGraphHash;
+                evalGraph = _evalGraph;
+                return changed;
+            }
+            OnEnable();
+            if (!_lastGraphHash.Equals(hash))
+            {
+                hash = _lastGraphHash;
+                evalGraph = _evalGraph;
+                return true;
             }
 
             return false;
+        }
+
+        public void SetParameters(params string[] formulaParams)
+        {
+            if (Params == null)
+                Params = formulaParams.ToList(); 
+            else
+            {
+                Params.Clear();
+                Params.AddRange(formulaParams);
+            }
         }
     }
 
@@ -81,5 +106,11 @@ namespace UnityTemplateProjects
     {
         public string Name;
         public Vector3 Value;
+
+        public FormulaParam(string name)
+        {
+            Name = name;
+            Value = default;
+        }
     }
 }
