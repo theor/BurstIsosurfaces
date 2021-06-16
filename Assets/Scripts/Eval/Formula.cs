@@ -64,6 +64,8 @@ namespace UnityTemplateProjects
                 // NamedValues = formulaParams;
             }
             _lastGraphHash = EvalGraph.Hash(Parsed);
+            if(_evalGraph.Nodes.IsCreated) 
+                _evalGraph.Dispose();
             _evalGraph = new EvalGraph(Parsed);
         }
 
