@@ -48,6 +48,7 @@ namespace UnityTemplateProjects.Editor
                     formulaObject.ApplyModifiedProperties();
                     ((Formula) formulaObject.targetObject).Init(true);
                     formulaObject.Update();
+                    Debug.Log(EditorJsonUtility.ToJson(formulaObject.targetObject));
                 }
 
                 EditorGUI.indentLevel++;

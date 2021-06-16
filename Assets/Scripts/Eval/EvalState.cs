@@ -95,6 +95,9 @@ namespace UnityTemplateProjects
                             var float3 = Pop();
                             Push(noise.srdnoise(float3.xy, float3.z));
                             break;
+                        case Op.V3:
+                            Push(new float3(Pop().x, Pop().x, Pop().x));
+                            break;
                         default:
                             throw new NotImplementedException(string.Format("{0}", node.Op));
                     }

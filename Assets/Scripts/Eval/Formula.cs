@@ -32,6 +32,11 @@ namespace UnityTemplateProjects
             Init(true);
         }
 
+        private void OnDisable()
+        {
+            _evalGraph.Dispose();
+        }
+
         public void Init(bool force = false)
         {
             bool cleanup =

@@ -76,7 +76,8 @@ namespace UnityTemplateProjects
         SRDNoise,
         Fbm,
         Dist,
-        SqDist
+        SqDist,
+        V3,
     }
 
     public static class Fbm

@@ -211,6 +211,10 @@ namespace ShuntingYard
                         CheckArgCount(1);
                         nodes.Add(new EvalGraph.Node(Op.SRDNoise));
                         break;
+                    case "v3":
+                        CheckArgCount(3);
+                        nodes.Add(new EvalGraph.Node(Op.V3));
+                        break;
                     case "dist":
                         CheckArgCount(2);
                         nodes.Add(new EvalGraph.Node(Op.Dist));
