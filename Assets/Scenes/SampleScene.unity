@@ -455,24 +455,6 @@ ReflectionProbe:
   m_UseOcclusionCulling: 1
   m_Importance: 1
   m_CustomBakedTexture: {fileID: 0}
---- !u!114 &1159870182
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8e6efdeb283a4f318f6a2b3fd4272e57, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  Input: a+snoise(coords)-dist(coords,0.5)
-  NamedValues:
-  - Name: a
-    Value: {x: 0.25, y: 3, z: 0}
-  Params:
-  - coords
 --- !u!4 &1278355951
 Transform:
   m_ObjectHideFlags: 0
@@ -517,7 +499,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   VoxelSide: 1
-  DensityFormula: {fileID: 0}
+  DensityFormula:
+    Input: 
+    NamedValues: []
+    Params: []
+    Dirty: 0
 --- !u!4 &1299440074
 Transform:
   m_ObjectHideFlags: 0
@@ -841,7 +827,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   VoxelSide: 16
-  DensityFormula: {fileID: 1159870182}
+  DensityFormula:
+    Input: srdnoise(coords)+a
+    NamedValues:
+    - Name: a
+      Value: {x: 0, y: 0, z: 0}
+    Params:
+    - coords
+    Dirty: 0
 --- !u!1001 &1556901916
 PrefabInstance:
   m_ObjectHideFlags: 0

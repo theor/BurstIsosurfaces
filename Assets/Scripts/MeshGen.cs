@@ -63,6 +63,7 @@ namespace UnityTemplateProjects
 
         private void Start()
         {
+            DensityFormula.Compile(ref DensityFormulaEvaluator);
             EdgeTable = Marching.EdgeTable(Allocator.Persistent);
             TriTable = Marching.TriTable(Allocator.Persistent);
             EdgeConnection = Marching.EdgeConnection(Allocator.Persistent);
@@ -182,7 +183,7 @@ namespace UnityTemplateProjects
 
         public bool DensityFormulaChanged()
         {
-            var changed = false;// TODO tr DensityFormula.Compile(ref _lastHash, ref DensityFormulaEvaluator);
+            var changed = DensityFormula.Compile(ref DensityFormulaEvaluator);
             // Debug.Log($"Update formula {changed}\n{DensityFormula.Input}");
             return changed;
         }
