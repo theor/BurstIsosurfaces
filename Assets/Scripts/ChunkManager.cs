@@ -47,10 +47,10 @@ namespace UnityTemplateProjects
         {
             Debug.Log("Changed");
             
+            _meshGen.ClearQueue();
             for (var i = 0; i < _chunks.Count; i++)
             {
-                _meshGen.ClearQueue();
-                _meshGen.RequestChunk(_chunks[i], _chunks[i].Coords, Scale, true);
+                _meshGen.RequestChunk(_chunks[i], _chunks[i].Coords, Scale, false);
             }
         }
 #endif
