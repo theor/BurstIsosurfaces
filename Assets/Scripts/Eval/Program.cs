@@ -118,15 +118,17 @@ namespace ShuntingYard
 
     public static class Translator
     {
-        public static EvalGraph.Node[] Translate(INode node, List<FormulaParam> variables, List<string> parameters)
+        public static EvalGraph.Node[] Translate(INode node, List<FormulaParam> variables, List<string> parameters,
+            out ulong usedValues)
         {
             List<EvalGraph.Node> nodes = new List<EvalGraph.Node>();
-            Rec(nodes, variables, node, parameters);
+            usedValues = 0;
+            Rec(nodes, variables, node, parameters, ref usedValues);
             return nodes.ToArray();
         }
 
         private static void Rec(List<EvalGraph.Node> nodes, List<FormulaParam> variables, INode node,
-            List<string> formulaParams)
+            List<string> formulaParams, ref ulong usedValues)
         {
             
             switch (node)
@@ -146,15 +148,22 @@ namespace ShuntingYard
                         if (idx < 0)
                         {
                             variables.Insert(~idx, variableParam);
+                            idx = ~idx;
+                            var shiftMask = (~0ul) << idx;
+                            var shiftedPart = (usedValues & shiftMask) << 1;
+                            var rightMask = (1ul << idx) - 1;
+                            usedValues = shiftedPart | (usedValues & rightMask);
                         }
                         else
                             variableParam = variables[idx];
+
+                        usedValues |= 1ul << idx; 
                         nodes.Add(new EvalGraph.Node(Op.Const, variableParam.Value));
                     }
 
                     break;
                 case UnOp u:
-                    Rec(nodes, variables, u.A, formulaParams);
+                    Rec(nodes, variables, u.A, formulaParams, ref usedValues);
                     if(u.Type == OpType.Plus)
                         break;
                     if(u.Type == OpType.Minus)
@@ -164,8 +173,8 @@ namespace ShuntingYard
                     break;
                 case BinOp bin:
                     // reverse order
-                    Rec(nodes, variables, bin.B, formulaParams);
-                    Rec(nodes, variables, bin.A, formulaParams);
+                    Rec(nodes, variables, bin.B, formulaParams, ref usedValues);
+                    Rec(nodes, variables, bin.A, formulaParams, ref usedValues);
                     nodes.Add(new EvalGraph.Node(bin.Type switch
                     {
                         OpType.Add => Op.Add,
@@ -177,66 +186,66 @@ namespace ShuntingYard
                     }));
                     break;
                 case FuncCall f:
-                void CheckArgCount(int n)
+                void CheckArgCount(int n, ref ulong argUsedValues)
                 {
                     Assert.AreEqual(f.Arguments.Count, n);
                     // reverse order
                     for (int i = n - 1; i >= 0; i--)
-                        Rec(nodes, variables, f.Arguments[i], formulaParams);
+                        Rec(nodes, variables, f.Arguments[i], formulaParams, ref argUsedValues);
                 }
 
                 switch (f.Id)
                 {
                     case "x":
-                        CheckArgCount(1);
+                        CheckArgCount(1, ref usedValues);
                         nodes.Add(new EvalGraph.Node(Op.X));
                         break;
                     case "y":
-                        CheckArgCount(1);
+                        CheckArgCount(1, ref usedValues);
                         nodes.Add(new EvalGraph.Node(Op.Y));
                         break;
                     case "z":
-                        CheckArgCount(1);
+                        CheckArgCount(1, ref usedValues);
                         nodes.Add(new EvalGraph.Node(Op.Z));
                         break;
                     case "cnoise":
-                        CheckArgCount(1);
+                        CheckArgCount(1, ref usedValues);
                         nodes.Add(new EvalGraph.Node(Op.CNoise));
                         break;
                     case "snoise":
-                        CheckArgCount(1);
+                        CheckArgCount(1, ref usedValues);
                         nodes.Add(new EvalGraph.Node(Op.SNoise));
                         break;
                     case "srdnoise":
-                        CheckArgCount(1);
+                        CheckArgCount(1, ref usedValues);
                         nodes.Add(new EvalGraph.Node(Op.SRDNoise));
                         break;
                     case "v3":
-                        CheckArgCount(3);
+                        CheckArgCount(3, ref usedValues);
                         nodes.Add(new EvalGraph.Node(Op.V3));
                         break;
                     case "dist":
-                        CheckArgCount(2);
+                        CheckArgCount(2, ref usedValues);
                         nodes.Add(new EvalGraph.Node(Op.Dist));
                         break;
                     case "sqdist":
-                        CheckArgCount(2);
+                        CheckArgCount(2, ref usedValues);
                         nodes.Add(new EvalGraph.Node(Op.SqDist));
                         break;
                     case "sin":
-                        CheckArgCount(1);
+                        CheckArgCount(1, ref usedValues);
                         nodes.Add(new EvalGraph.Node(Op.Sin));
                         break;
                     case "cos":
-                        CheckArgCount(1);
+                        CheckArgCount(1, ref usedValues);
                         nodes.Add(new EvalGraph.Node(Op.Cos));
                         break;
                     case "tan":
-                        CheckArgCount(1);
+                        CheckArgCount(1, ref usedValues);
                         nodes.Add(new EvalGraph.Node(Op.Tan));
                         break;
                     case "fbm":
-                        CheckArgCount(4);
+                        CheckArgCount(4, ref usedValues);
                         nodes.Add(new EvalGraph.Node(Op.Fbm));
                         break;
                     // case "f3": case "v3":

@@ -2,13 +2,14 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using ShuntingYard;
+using Unity.Jobs;
 using Unity.Mathematics;
 using UnityEngine;
 
 namespace UnityTemplateProjects
 {
     [Serializable]
-    public class Formula : ScriptableObject
+    public class Formula
     {
         public static FormulaParamNameComparer s_ParamNameComparer = new FormulaParamNameComparer();
         public class FormulaParamNameComparer : IComparer<FormulaParam>
@@ -21,17 +22,11 @@ namespace UnityTemplateProjects
         public string Input;
         public List<FormulaParam> NamedValues;
         public List<string> Params;
+        public bool Dirty;
 
-        private EvalGraph.Node[] Parsed;
         private string _error;
         private int _lastFormulaHashCode;
-        public bool Dirty => _lastFormulaHashCode != (Input?.GetHashCode() ?? 0);
-
-        public void OnEnable()
-        {
-            Init(true);
-        }
-
+        
         private void OnDisable()
         {
             _evalGraph.Dispose();
@@ -52,40 +47,40 @@ namespace UnityTemplateProjects
             _lastFormulaHashCode = Input?.GetHashCode() ?? 0; 
             if (root == null)
                 return;
-            Parsed = Translator.Translate(root, NamedValues, Params);
+            var parsed = Translator.Translate(root, NamedValues, Params, out var usedValues);
             if (cleanup)
             {
-                // for (var index = 0; index < formulaParams.Count; index++)
-                // {
-                //     var p = formulaParams[index];
-                //     int existingValueIndex = NamedValues.BinarySearch(p, s_ParamNameComparer);
-                //     if (existingValueIndex >= 0)
-                //     {
-                //         p.Value = NamedValues[existingValueIndex].Value;
-                //         formulaParams[index] = p;
-                //     }
-                // }
-                //
-                // NamedValues = formulaParams;
+                for (var index = NamedValues.Count - 1; index >= 0; index--)
+                    if ((usedValues & (1ul << index)) == 0)
+                        NamedValues.RemoveAt(index);
             }
-            _lastGraphHash = EvalGraph.Hash(Parsed);
-            if(_evalGraph.Nodes.IsCreated) 
-                _evalGraph.Dispose();
-            _evalGraph = new EvalGraph(Parsed);
+            _lastGraphHash = EvalGraph.Hash(parsed);
+            _dependency.Complete();
+            _evalGraph.Dispose();
+            _evalGraph = new EvalGraph(parsed);
         }
 
         private uint4 _lastGraphHash;
         private EvalGraph _evalGraph;
+        private JobHandle _dependency;
+
+        public void AddDependency(JobHandle h)
+        {
+            _dependency = JobHandle.CombineDependencies(_dependency, h);
+        }
         public bool MakeEval(ref uint4 hash, ref EvalGraph evalGraph)
         {
-            if (!Dirty)
+            if(_lastFormulaHashCode == 0)
+                Init();
+            if ( !Dirty)
             {
                 var changed = !hash.Equals(_lastGraphHash);
                 hash = _lastGraphHash;
                 evalGraph = _evalGraph;
                 return changed;
             }
-            OnEnable();
+            
+            Init();
             if (!_lastGraphHash.Equals(hash))
             {
                 hash = _lastGraphHash;

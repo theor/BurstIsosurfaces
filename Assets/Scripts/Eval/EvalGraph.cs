@@ -49,7 +49,14 @@ namespace UnityTemplateProjects
             Nodes = new NativeArray<Node>(nodes, Allocator.Persistent);
         }
 
-        public void Dispose() => Dispose(default);
+        public void Dispose()
+        {
+            if (Nodes.IsCreated)
+            {
+                Nodes.Dispose();
+            }
+        }
+
         public void Dispose(JobHandle handle)
         {
             Debug.Log("Dispose");

@@ -27,6 +27,7 @@ namespace UnityTemplateProjects
 
         private MeshGen _meshGen;
         public int Scale;
+        public bool InQueue { get; set; }
 
         private void OnDrawGizmosSelected()
         {
@@ -93,8 +94,12 @@ namespace UnityTemplateProjects
                 Scale = Scale,
                 EvalGraph = _meshGen.DensityFormulaEvaluator
             };
+            
+            
+            OutputMeshData = Mesh.AllocateWritableMeshData(1);
 
             var h = djob.ScheduleParallel(densityCount, 256, default);
+            _meshGen.DensityFormula.AddDependency(h);
             // var h = djob.Schedule(densityCount,_handle);
             var job = new GenJob
             {
@@ -129,6 +134,7 @@ namespace UnityTemplateProjects
         {
             if (Generating && _handle.IsCompleted)
             {
+                InQueue = false;
                 _sw?.Stop();
                 _handle.Complete();
                 // Debug.Log($"Complete Chunk in {_sw.ElapsedMilliseconds}ms, Indices: {_indexVertexCounts[0]}, Vertices: {_indexVertexCounts[1]}");

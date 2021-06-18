@@ -54,11 +54,11 @@ namespace UnityTemplateProjects
 
         private void Reset()
         {
-            if (!DensityFormula)
+            if (DensityFormula == null)
             {
-                DensityFormula = Formula.CreateInstance<Formula>();
-                DensityFormula.SetParameters("coords");
+                DensityFormula = new Formula();
             }
+            DensityFormula.SetParameters("coords");
         }
 
         private void Start()
@@ -80,7 +80,7 @@ namespace UnityTemplateProjects
             EdgeConnection.Dispose();
         }
         
-        public void RequestChunk(Chunk chunk, int3 coords, int scale, bool forceImmediate = false)
+        public void RequestChunk(Chunk chunk, int3 coords, int scale, bool forceImmediate = false, bool cancelPrevious = false)
         {
             chunk.Coords = coords;
             chunk.Scale = scale;
@@ -89,7 +89,13 @@ namespace UnityTemplateProjects
                 _currentHandle = JobHandle.CombineDependencies(_currentHandle, GenerateChunk(chunk));
             }
             else
-                _queue.Enqueue(chunk);
+            {
+                if (!chunk.InQueue)
+                {
+                    chunk.InQueue = true;
+                    _queue.Enqueue(chunk);
+                }
+            }
         }
 
         private void Update()
@@ -101,7 +107,6 @@ namespace UnityTemplateProjects
                 // while (_queue.Count > 0 && sw.ElapsedMilliseconds < 8)
                 {
                     var chunk = _queue.Dequeue();
-                    
                     _currentHandle = GenerateChunk(chunk);
                     // _currentHandle = JobHandle.CombineDependencies(_currentHandle, chunk.RequestGeneration());
                 }
@@ -111,7 +116,6 @@ namespace UnityTemplateProjects
         private static JobHandle GenerateChunk(Chunk chunk)
         {
             chunk.Generating = true;
-            chunk.OutputMeshData = Mesh.AllocateWritableMeshData(1);
 
             return chunk.RequestGeneration();
         }

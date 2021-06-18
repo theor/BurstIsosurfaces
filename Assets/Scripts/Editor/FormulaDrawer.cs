@@ -1,3 +1,5 @@
+using System.Reflection;
+using System.Text.RegularExpressions;
 using UnityEditor;
 using UnityEngine;
 //
@@ -12,15 +14,17 @@ namespace UnityTemplateProjects.Editor
         public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
         {
             int i = 1; // input
-
-            if (property.objectReferenceValue)
-            {
-                var formulaObject = new SerializedObject(property.objectReferenceValue);
-                var namedValues = formulaObject.FindProperty(nameof(Formula.NamedValues));
-                i += namedValues.arraySize;
-                var paramsProp = formulaObject.FindProperty(nameof(Formula.Params));
-                i += paramsProp.arraySize;
-            }
+            i = 15;
+            // if (property.propertyType == SerializedPropertyType.ManagedReference)
+            // {
+            //     var formulaObject = new SerializedObject(property.objectReferenceValue);
+            //     var namedValues = formulaObject.FindProperty(nameof(Formula.NamedValues));
+            //     i += namedValues.arraySize;
+            //     var paramsProp = formulaObject.FindProperty(nameof(Formula.Params));
+            //     i += paramsProp.arraySize;
+            // }
+            // else
+            //     return base.GetPropertyHeight(property, label);
 
             return EditorGUIUtility.singleLineHeight * i;
         }
@@ -28,34 +32,34 @@ namespace UnityTemplateProjects.Editor
         // Draw the property inside the given rect
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {
+            void UpdateInstance() => ((Formula) property.GetSerializedObject()).Init();
             // Using BeginProperty / EndProperty on the parent property means that
             // prefab override logic works on the entire property.
-            EditorGUI.BeginProperty(position, label, property);
 
-            if (property.objectReferenceValue)
-            {
-                var formulaObject = new SerializedObject(property.objectReferenceValue);
+                EditorGUI.BeginProperty(position, label, property);
+                var formulaObject = property.serializedObject;
               
                 var rect = new Rect(position.x, position.y, position.width, EditorGUIUtility.singleLineHeight );
                 
 
                 EditorGUI.BeginChangeCheck();
                 EditorGUI.PropertyField(rect,
-                    formulaObject.FindProperty(nameof(Formula.Input)), label); 
+                    property.FindPropertyRelative(nameof(Formula.Input)), label); 
                 if (EditorGUI.EndChangeCheck())
                 {
                     Debug.Log("CHANGE");
                     formulaObject.ApplyModifiedProperties();
-                    ((Formula) formulaObject.targetObject).Init(true);
+                    property.FindPropertyRelative(nameof(Formula.Dirty)).boolValue = true;
+                    UpdateInstance();
                     formulaObject.Update();
-                    Debug.Log(EditorJsonUtility.ToJson(formulaObject.targetObject));
+                    // Debug.Log(EditorJsonUtility.ToJson(formulaObject.targetObject));
                 }
 
                 EditorGUI.indentLevel++;
-                var namedValues = formulaObject.FindProperty(nameof(Formula.NamedValues));
+                var namedValues = property.FindPropertyRelative(nameof(Formula.NamedValues));
                 bool enabled = GUI.enabled;
                 GUI.enabled = false;
-                var paramsProp = formulaObject.FindProperty(nameof(Formula.Params));
+                var paramsProp = property.FindPropertyRelative(nameof(Formula.Params));
                 for (int i = 0; i < paramsProp.arraySize; i++)
                 {
                     var elt = paramsProp.GetArrayElementAtIndex(i);
@@ -81,14 +85,60 @@ namespace UnityTemplateProjects.Editor
                 if (EditorGUI.EndChangeCheck())
                 {
                     formulaObject.ApplyModifiedProperties();
-                    ((Formula) formulaObject.targetObject).Init(false);
+                    UpdateInstance();
+
                 }
                 EditorGUI.indentLevel--;
-            }
-            else
-                EditorGUILayout.PropertyField(property, label, true);
 
-            EditorGUI.EndProperty();
+                EditorGUI.EndProperty();
+        }
+    }
+
+    public static class DrawerExtensions
+    {
+        public static object GetSerializedObject(this SerializedProperty property)
+        {
+            return property.serializedObject.GetChildObject(property.propertyPath);
+        }
+
+        private static readonly Regex matchArrayElement = new Regex(@"^data\[(\d+)\]$");
+        public static object GetChildObject(this SerializedObject serializedObject, string path)
+        {
+            object propertyObject = serializedObject.targetObject;
+
+            if (path != "" && propertyObject != null)
+            {
+                string[] splitPath = path.Split('.');
+                FieldInfo field = null;
+
+                foreach (string pathNode in splitPath)
+                {
+                    if (field != null && field.FieldType.IsArray)
+                    {
+                        if (pathNode.Equals("Array"))
+                            continue;
+
+                        Match elementMatch = matchArrayElement.Match(pathNode);
+                        int index;
+                        if (elementMatch.Success && int.TryParse(elementMatch.Groups[1].Value, out index))
+                        {
+                            field = null;
+                            object[] objectArray = (object[])propertyObject;
+                            if (objectArray != null && index < objectArray.Length)
+                                propertyObject = ((object[])propertyObject)[index];
+                            else
+                                return null;
+                        }
+                    }
+                    else
+                    {
+                        field = propertyObject.GetType().GetField(pathNode, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+                        propertyObject = field.GetValue(propertyObject);
+                    }
+                }
+            }
+
+            return propertyObject;
         }
     }
 }

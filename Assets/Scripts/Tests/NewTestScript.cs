@@ -71,7 +71,7 @@ public class EvaluationTestsBase
     {
         var n = Parser.Parse(input, out var err);
         Assert.IsNull(err, err);
-        var nodes = Translator.Translate(n, variables.Select(x => new FormulaParam(x.Key){Value = x.Value}).ToList(), @params.Select(x => x.Item1).ToList());
+        var nodes = Translator.Translate(n, variables.Select(x => new FormulaParam(x.Key){Value = x.Value}).ToList(), @params.Select(x => x.Item1).ToList(), out var usedValues);
         Debug.Log(string.Join("\n",variables.Select(x => $"{x.Key}: {x.Value}")));
         Run(result, nodes, @params.Select(x => x.Item2).ToArray());
     }
