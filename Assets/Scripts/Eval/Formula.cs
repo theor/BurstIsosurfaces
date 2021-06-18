@@ -14,7 +14,6 @@ namespace UnityTemplateProjects
         public static FormulaParamNameComparer s_ParamNameComparer = new FormulaParamNameComparer();
         public class FormulaParamNameComparer : IComparer<FormulaParam>
         {
-
             public int Compare(FormulaParam x, FormulaParam y) => string.Compare(x.Name, y.Name, StringComparison.Ordinal);
         }
 
@@ -26,6 +25,8 @@ namespace UnityTemplateProjects
 
         private string _error;
         private int _lastFormulaHashCode;
+        private uint4 _lastGraphHash;
+        private EvalGraph _evalGraph;
         
         private void OnDisable()
         {
@@ -55,40 +56,35 @@ namespace UnityTemplateProjects
                         NamedValues.RemoveAt(index);
             }
             _lastGraphHash = EvalGraph.Hash(parsed);
-            _dependency.Complete();
             _evalGraph.Dispose();
             _evalGraph = new EvalGraph(parsed);
         }
 
-        private uint4 _lastGraphHash;
-        private EvalGraph _evalGraph;
-        private JobHandle _dependency;
 
-        public void AddDependency(JobHandle h)
+        public bool Compile(ref EvalGraph evalGraph)
         {
-            _dependency = JobHandle.CombineDependencies(_dependency, h);
-        }
-        public bool MakeEval(ref uint4 hash, ref EvalGraph evalGraph)
-        {
-            if(_lastFormulaHashCode == 0)
-                Init();
-            if ( !Dirty)
-            {
-                var changed = !hash.Equals(_lastGraphHash);
-                hash = _lastGraphHash;
-                evalGraph = _evalGraph;
-                return changed;
-            }
-            
             Init();
-            if (!_lastGraphHash.Equals(hash))
-            {
-                hash = _lastGraphHash;
-                evalGraph = _evalGraph;
-                return true;
-            }
-
+            evalGraph = _evalGraph;
             return false;
+            // if(_lastFormulaHashCode == 0)
+            //     Init();
+            // if ( !Dirty)
+            // {
+            //     var changed = !hash.Equals(_lastGraphHash);
+            //     hash = _lastGraphHash;
+            //     evalGraph = _evalGraph;
+            //     return changed;
+            // }
+            //
+            // Init();
+            // if (!_lastGraphHash.Equals(hash))
+            // {
+            //     hash = _lastGraphHash;
+            //     evalGraph = _evalGraph;
+            //     return true;
+            // }
+            //
+            // return false;
         }
 
         public void SetParameters(params string[] formulaParams)

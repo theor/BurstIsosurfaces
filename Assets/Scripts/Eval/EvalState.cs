@@ -24,7 +24,12 @@ namespace UnityTemplateProjects
         {
             _stack.Add(val);
         }
-        
+
+        [BurstCompile]
+        public static unsafe void Run(in EvalGraph graph, float3* @params, out float3 res)
+        {
+            res = new EvalState().Run(graph, @params);
+        }
         [BurstCompile]
         public unsafe float3 Run(in EvalGraph graph,  float3* @params)
         {
@@ -32,7 +37,7 @@ namespace UnityTemplateProjects
             {
                 _current = 0;
                 _stack.Clear();
-                while (_current < graph.Nodes.Length)
+                while (_current < graph.Length)
                 {
                     var node = graph.Nodes[_current];
                     switch (node.Op)

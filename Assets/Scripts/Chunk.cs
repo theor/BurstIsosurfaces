@@ -1,15 +1,10 @@
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Security.Cryptography;
 using Unity.Collections;
 using Unity.Jobs;
 using Unity.Mathematics;
-using UnityEditor;
 using UnityEngine;
 using UnityEngine.Assertions;
 using UnityEngine.Rendering;
-using Debug = UnityEngine.Debug;
 
 namespace UnityTemplateProjects
 {
@@ -29,6 +24,7 @@ namespace UnityTemplateProjects
         public int Scale;
         public bool InQueue { get; set; }
 
+        #if UNITY_EDITOR
         private void OnDrawGizmosSelected()
         {
             if (_densities.IsCreated && _handle.IsCompleted)
@@ -43,10 +39,11 @@ namespace UnityTemplateProjects
                     Gizmos.color = d < 0 ? Color.black : Color.green;
                     var vector3 = (float3)Coords + (float3)coords*delta;
                     Gizmos.DrawSphere(vector3, delta/16);
-                    Handles.Label(vector3, $"{vector3} {i}  {d:F2}");
+                    UnityEditor.Handles.Label(vector3, $"{vector3} {i}  {d:F2}");
                 }
             }
         }
+        #endif
 
         public void Setup(MeshGen meshGen)
         {
@@ -99,7 +96,7 @@ namespace UnityTemplateProjects
             OutputMeshData = Mesh.AllocateWritableMeshData(1);
 
             var h = djob.ScheduleParallel(densityCount, 256, default);
-            _meshGen.DensityFormula.AddDependency(h);
+            // _meshGen.DensityFormula.AddDependency(h);
             // var h = djob.Schedule(densityCount,_handle);
             var job = new GenJob
             {

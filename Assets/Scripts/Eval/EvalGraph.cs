@@ -40,30 +40,27 @@ namespace UnityTemplateProjects
                 Index = index;
             }
         }
-        
-        public NativeArray<Node> Nodes;
-        
+        [NativeDisableUnsafePtrRestriction]
+        public unsafe Node* Nodes;
+        public ushort Length;
+        private Allocator _allocator;
 
-        public EvalGraph(Node[] nodes)
+
+        public unsafe EvalGraph(Node[] nodes, Allocator allocator = Allocator.Persistent)
         {
-            Nodes = new NativeArray<Node>(nodes, Allocator.Persistent);
+            var size = (ushort) (UnsafeUtility.SizeOf<Node>() * nodes.Length);
+            Length = (ushort) nodes.Length;
+            _allocator = allocator;
+            Nodes = (Node*) UnsafeUtility.Malloc(size, UnsafeUtility.AlignOf<Node>(),
+                _allocator);
+            fixed(Node* ptr = nodes)
+                UnsafeUtility.MemCpy(Nodes, ptr, size);
         }
 
-        public void Dispose()
+        public unsafe void Dispose()
         {
-            if (Nodes.IsCreated)
-            {
-                Nodes.Dispose();
-            }
-        }
-
-        public void Dispose(JobHandle handle)
-        {
-            Debug.Log("Dispose");
-            if (Nodes.IsCreated)
-            {
-                Nodes.Dispose(handle);
-            }
+            if(Nodes != null)
+                UnsafeUtility.Free(Nodes, _allocator);
         }
     }
 

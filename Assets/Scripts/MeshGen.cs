@@ -68,7 +68,7 @@ namespace UnityTemplateProjects
             EdgeConnection = Marching.EdgeConnection(Allocator.Persistent);
             EdgeDirection = Marching.EdgeDirection(Allocator.Persistent);
             _queue = new Queue<Chunk>((2 * VoxelSide + 1)*(2 * VoxelSide + 1));
-            // DensityFormula.MakeEval(ref _lastHash, out DensityFormulaEvaluator);
+            // DensityFormula.Compile(ref _lastHash, out DensityFormulaEvaluator);
         }
 
         private void OnDestroy()
@@ -182,7 +182,7 @@ namespace UnityTemplateProjects
 
         public bool DensityFormulaChanged()
         {
-            var changed = DensityFormula.MakeEval(ref _lastHash, ref DensityFormulaEvaluator);
+            var changed = false;// TODO tr DensityFormula.Compile(ref _lastHash, ref DensityFormulaEvaluator);
             // Debug.Log($"Update formula {changed}\n{DensityFormula.Input}");
             return changed;
         }
