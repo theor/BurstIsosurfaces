@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.Design;
 using Unity.Collections;
 using Unity.Jobs;
 using Unity.Mathematics;
@@ -80,7 +81,8 @@ namespace UnityTemplateProjects
             EdgeDirection.Dispose();
             EdgeConnection.Dispose();
         }
-        
+
+        public void ForceComplete() => _currentHandle.Complete();
         public void RequestChunk(Chunk chunk, int3 coords, int scale, bool forceImmediate = false, bool cancelPrevious = false)
         {
             chunk.Coords = coords;
@@ -99,16 +101,8 @@ namespace UnityTemplateProjects
             }
         }
 
-
-#if UNITY_EDITOR
-        private void OnFormulaChanged(EvalGraph oldgraph, EvalGraph newgraph)
-        {
-            Debug.Log("Changed");
-        }
-#endif
         private void Update()
         {
-            DensityFormula.LiveEdit(ref DensityFormulaEvaluator, OnFormulaChanged);
             if (_currentHandle.IsCompleted && _queue.Count > 0)
             {
                 // Stopwatch sw = Stopwatch.StartNew();
@@ -187,6 +181,12 @@ namespace UnityTemplateProjects
 
             return 1.25f - math.distance(coords, new float3(.5f)); // sphere
             // return 0.5f - math.distance(coords, new float3(.5f,.5f,.5f));
+        }
+
+        public void ClearQueue()
+        {
+            _queue.Clear();
+            _currentHandle.Complete();
         }
     }
 }

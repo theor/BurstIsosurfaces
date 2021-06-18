@@ -42,17 +42,24 @@ namespace UnityTemplateProjects
             
         }
 
+#if UNITY_EDITOR
+        private void OnFormulaChanged(EvalGraph oldgraph, EvalGraph newgraph)
+        {
+            Debug.Log("Changed");
+            
+            for (var i = 0; i < _chunks.Count; i++)
+            {
+                _meshGen.ClearQueue();
+                _meshGen.RequestChunk(_chunks[i], _chunks[i].Coords, Scale, true);
+            }
+        }
+#endif
+
         private void Update()
         {
-            // #if UNITY_EDITOR
-            // if (_meshGen.DensityFormulaChanged())
-            // {
-            //     for (var i = 0; i < _chunks.Count; i++)
-            //     {
-            //         _meshGen.RequestChunk(_chunks[i], _chunks[i].Coords, Scale, true);
-            //     }
-            // }
-            // #endif
+#if UNITY_EDITOR
+            _meshGen.DensityFormula.LiveEdit(ref _meshGen.DensityFormulaEvaluator, OnFormulaChanged);
+#endif
             
             var position = Target.position;
             int3 cur = new int3((int) math.floor(position.x - Scale/2), (int) math.floor(position.y - Scale/2), (int) math.floor(position.z - Scale/2));

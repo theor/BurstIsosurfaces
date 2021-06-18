@@ -503,7 +503,6 @@ MonoBehaviour:
     Input: 
     NamedValues: []
     Params: []
-    Dirty: 0
 --- !u!4 &1299440074
 Transform:
   m_ObjectHideFlags: 0
@@ -796,10 +795,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f96958bdb52f4156b3756a2cb0238a07, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Target: {fileID: 1435971622}
+  Target: {fileID: 1687258585}
   Material: {fileID: 2100000, guid: 6ed680514c08b694aaf98cbc244b833f, type: 2}
   Scale: 1
-  ChunkDist: 3
+  ChunkDist: 2
 --- !u!4 &1474798335
 Transform:
   m_ObjectHideFlags: 0
@@ -834,7 +833,6 @@ MonoBehaviour:
       Value: {x: 0, y: 0, z: 0}
     Params:
     - coords
-    Dirty: 0
 --- !u!1001 &1556901916
 PrefabInstance:
   m_ObjectHideFlags: 0

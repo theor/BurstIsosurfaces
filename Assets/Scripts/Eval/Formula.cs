@@ -31,24 +31,21 @@ namespace UnityTemplateProjects
         internal bool _dirty;
 
 
-#if UNITY_EDITOR
         public delegate void FormulaChangedCallback(EvalGraph oldGraph, EvalGraph newGraph);
-#endif
         [Conditional("UNITY_EDITOR")]
         public void LiveEdit(ref EvalGraph evalGraph, FormulaChangedCallback onFormulaChanged = null)
         {
             if (_dirty)
             {
                 _dirty = false;
-                var parsed =Init();
+                var parsed = Init();
                 
                 _lastFormulaHashCode = Input?.GetHashCode() ?? 0;
             
-                var newGraph = new EvalGraph(parsed);
-                onFormulaChanged?.Invoke(evalGraph, newGraph);
-                evalGraph.Dispose();
-
-                evalGraph = newGraph;
+                EvalGraph oldGraph = evalGraph;
+                evalGraph = new EvalGraph(parsed);
+                onFormulaChanged?.Invoke(oldGraph, evalGraph);
+                oldGraph.Dispose();
             }
         }
 

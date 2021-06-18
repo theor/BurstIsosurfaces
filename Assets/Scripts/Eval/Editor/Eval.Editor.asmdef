@@ -1,0 +1,18 @@
+{
+    "name": "Eval.Editor",
+    "rootNamespace": "",
+    "references": [
+        "GUID:7692ed34a73b1fb4792fa24fd49d321b"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
