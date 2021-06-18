@@ -7,7 +7,6 @@ namespace UnityTemplateProjects
     public class FormulaTest : MonoBehaviour
     {
         public Formula Test;
-        // private uint4 _hash;
         private EvalGraph _evalgraph;
 
         public void Reset()
@@ -18,7 +17,7 @@ namespace UnityTemplateProjects
 
         private void Start()
         {
-            Test.Compile(ref _evalgraph);
+            Test.Compile(out _evalgraph);
         }
 
         private void OnDestroy()
@@ -28,11 +27,12 @@ namespace UnityTemplateProjects
 
         private unsafe void Update()
         {
-            // Test.Compile(ref _hash, ref _evalgraph);
+#if UNITY_EDITOR
+            Test.LiveEdit(ref _evalgraph);
+#endif
             float3 t = Time.realtimeSinceStartup;
             EvalState.Run(_evalgraph, &t, out float3 res);
             transform.localPosition = res;
-            // transform.localPosition =  new EvalState().Run(_evalgraph, &t);
         }
     }
 }

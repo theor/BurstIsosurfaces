@@ -1,10 +1,12 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using ShuntingYard;
 using Unity.Jobs;
 using Unity.Mathematics;
 using UnityEngine;
+using Debug = UnityEngine.Debug;
 
 namespace UnityTemplateProjects
 {
@@ -21,70 +23,71 @@ namespace UnityTemplateProjects
         public string Input;
         public List<FormulaParam> NamedValues;
         public List<string> Params;
-        public bool Dirty;
+
+        internal void SetDirty() => _dirty = true;
 
         private string _error;
         private int _lastFormulaHashCode;
-        private uint4 _lastGraphHash;
-        private EvalGraph _evalGraph;
-        
-        private void OnDisable()
+        internal bool _dirty;
+
+
+#if UNITY_EDITOR
+        public delegate void FormulaChangedCallback(EvalGraph oldGraph, EvalGraph newGraph);
+#endif
+        [Conditional("UNITY_EDITOR")]
+        public void LiveEdit(ref EvalGraph evalGraph, FormulaChangedCallback onFormulaChanged = null)
         {
-            _evalGraph.Dispose();
+            if (_dirty)
+            {
+                _dirty = false;
+                var parsed =Init();
+                
+                _lastFormulaHashCode = Input?.GetHashCode() ?? 0;
+            
+                var newGraph = new EvalGraph(parsed);
+                onFormulaChanged?.Invoke(evalGraph, newGraph);
+                evalGraph.Dispose();
+
+                evalGraph = newGraph;
+            }
         }
 
-        public void Init(bool force = false)
+
+        public void Compile(out EvalGraph evalGraph)
+        {
+            var parsed =Init();
+
+            _lastFormulaHashCode = Input?.GetHashCode() ?? 0; 
+            
+            evalGraph = new EvalGraph(parsed);
+        }
+
+        public EvalGraph.Node[] Init()
         {
             bool cleanup =
-                force
+                    false
 #if UNITY_EDITOR
-                || !UnityEditor.EditorApplication.isPlaying
+                    || !UnityEditor.EditorApplication.isPlaying
 #endif
                 ;
 
 
             Debug.Log($"PARSING cleanup={cleanup}");
             var root = Parser.Parse(Input, out _error);
-            _lastFormulaHashCode = Input?.GetHashCode() ?? 0; 
+            ulong usedValues;
+            EvalGraph.Node[] parsed = null;
             if (root == null)
-                return;
-            var parsed = Translator.Translate(root, NamedValues, Params, out var usedValues);
+                usedValues = 0ul;
+            else
+                parsed = Translator.Translate(root, NamedValues, Params, out usedValues);
             if (cleanup)
             {
                 for (var index = NamedValues.Count - 1; index >= 0; index--)
                     if ((usedValues & (1ul << index)) == 0)
                         NamedValues.RemoveAt(index);
             }
-            _lastGraphHash = EvalGraph.Hash(parsed);
-            _evalGraph.Dispose();
-            _evalGraph = new EvalGraph(parsed);
-        }
 
-
-        public bool Compile(ref EvalGraph evalGraph)
-        {
-            Init();
-            evalGraph = _evalGraph;
-            return false;
-            // if(_lastFormulaHashCode == 0)
-            //     Init();
-            // if ( !Dirty)
-            // {
-            //     var changed = !hash.Equals(_lastGraphHash);
-            //     hash = _lastGraphHash;
-            //     evalGraph = _evalGraph;
-            //     return changed;
-            // }
-            //
-            // Init();
-            // if (!_lastGraphHash.Equals(hash))
-            // {
-            //     hash = _lastGraphHash;
-            //     evalGraph = _evalGraph;
-            //     return true;
-            // }
-            //
-            // return false;
+            return parsed;
         }
 
         public void SetParameters(params string[] formulaParams)

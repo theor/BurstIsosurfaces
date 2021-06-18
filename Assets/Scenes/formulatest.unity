@@ -162,7 +162,6 @@ MonoBehaviour:
       Value: {x: 7, y: 0, z: 0}
     Params:
     - t
-    Dirty: 0
 --- !u!65 &753493044
 BoxCollider:
   m_ObjectHideFlags: 0

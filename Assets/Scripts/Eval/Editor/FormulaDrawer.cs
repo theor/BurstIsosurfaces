@@ -32,7 +32,12 @@ namespace UnityTemplateProjects.Editor
         // Draw the property inside the given rect
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {
-            void UpdateInstance() => ((Formula) property.GetSerializedObject()).Init();
+            void UpdateInstance()
+            {
+                var formula = ((Formula) property.GetSerializedObject());
+                formula.Init();
+                formula._dirty = true;
+            }
             // Using BeginProperty / EndProperty on the parent property means that
             // prefab override logic works on the entire property.
 
@@ -49,7 +54,6 @@ namespace UnityTemplateProjects.Editor
                 {
                     Debug.Log("CHANGE");
                     formulaObject.ApplyModifiedProperties();
-                    property.FindPropertyRelative(nameof(Formula.Dirty)).boolValue = true;
                     UpdateInstance();
                     formulaObject.Update();
                     // Debug.Log(EditorJsonUtility.ToJson(formulaObject.targetObject));

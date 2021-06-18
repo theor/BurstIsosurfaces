@@ -63,7 +63,7 @@ namespace UnityTemplateProjects
 
         private void Start()
         {
-            DensityFormula.Compile(ref DensityFormulaEvaluator);
+            DensityFormula.Compile(out DensityFormulaEvaluator);
             EdgeTable = Marching.EdgeTable(Allocator.Persistent);
             TriTable = Marching.TriTable(Allocator.Persistent);
             EdgeConnection = Marching.EdgeConnection(Allocator.Persistent);
@@ -99,8 +99,16 @@ namespace UnityTemplateProjects
             }
         }
 
+
+#if UNITY_EDITOR
+        private void OnFormulaChanged(EvalGraph oldgraph, EvalGraph newgraph)
+        {
+            Debug.Log("Changed");
+        }
+#endif
         private void Update()
         {
+            DensityFormula.LiveEdit(ref DensityFormulaEvaluator, OnFormulaChanged);
             if (_currentHandle.IsCompleted && _queue.Count > 0)
             {
                 // Stopwatch sw = Stopwatch.StartNew();
@@ -179,13 +187,6 @@ namespace UnityTemplateProjects
 
             return 1.25f - math.distance(coords, new float3(.5f)); // sphere
             // return 0.5f - math.distance(coords, new float3(.5f,.5f,.5f));
-        }
-
-        public bool DensityFormulaChanged()
-        {
-            var changed = DensityFormula.Compile(ref DensityFormulaEvaluator);
-            // Debug.Log($"Update formula {changed}\n{DensityFormula.Input}");
-            return changed;
         }
     }
 }
