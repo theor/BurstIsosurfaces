@@ -73,6 +73,8 @@ namespace UnityTemplateProjects
         Mul,Div,
         Mod,
         Minus,
+        Abs,
+        Saturate,
         X,Y,Z,
         Sin,Cos,Tan,
         CNoise,

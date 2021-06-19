@@ -26,7 +26,7 @@ namespace UnityTemplateProjects
 
         internal void SetDirty() => _dirty = true;
 
-        private string _error;
+        internal string _error;
         private int _lastFormulaHashCode;
         internal bool _dirty;
 
@@ -69,8 +69,10 @@ namespace UnityTemplateProjects
                 ;
 
 
-            Debug.Log($"PARSING cleanup={cleanup}");
             var root = Parser.Parse(Input, out _error);
+            Debug.Log($"PARSING cleanup={cleanup} error={_error}");
+            if (_error != null)
+                return null;
             ulong usedValues;
             EvalGraph.Node[] parsed = null;
             if (root == null)
@@ -99,16 +101,26 @@ namespace UnityTemplateProjects
         }
     }
 
+    // [Flags]
+    // public enum FormulaParamFlags : byte
+    // {
+    //     None = 0,
+    //     Float3 = 1,
+    //     Float = 2,
+    // }
+    
     [Serializable]
     public struct FormulaParam
     {
         public string Name;
         public Vector3 Value;
+        public bool IsSingleFloat; 
 
-        public FormulaParam(string name)
+        public FormulaParam(string name, bool isSingleFloat = false)
         {
             Name = name;
             Value = default;
+            IsSingleFloat = isSingleFloat;
         }
     }
 }

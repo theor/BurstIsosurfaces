@@ -2,6 +2,8 @@ using System.Reflection;
 using System.Text.RegularExpressions;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.Experimental.AI;
+
 //
 
 
@@ -14,14 +16,17 @@ namespace UnityTemplateProjects.Editor
         public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
         {
             int i = 1; // input
-            i = 15;
             // if (property.propertyType == SerializedPropertyType.ManagedReference)
             // {
             //     var formulaObject = new SerializedObject(property.objectReferenceValue);
-            //     var namedValues = formulaObject.FindProperty(nameof(Formula.NamedValues));
-            //     i += namedValues.arraySize;
-            //     var paramsProp = formulaObject.FindProperty(nameof(Formula.Params));
-            //     i += paramsProp.arraySize;
+            var namedValues = property.FindPropertyRelative(nameof(Formula.NamedValues));
+            i += namedValues.arraySize;
+            var paramsProp = property.FindPropertyRelative(nameof(Formula.Params));
+            i += paramsProp.arraySize;
+            
+            var formula = ((Formula) property.GetSerializedObject());
+            if (!string.IsNullOrEmpty(formula._error))
+                i++;
             // }
             // else
             //     return base.GetPropertyHeight(property, label);
@@ -45,7 +50,7 @@ namespace UnityTemplateProjects.Editor
                 var formulaObject = property.serializedObject;
               
                 var rect = new Rect(position.x, position.y, position.width, EditorGUIUtility.singleLineHeight );
-                
+                    
 
                 EditorGUI.BeginChangeCheck();
                 EditorGUI.PropertyField(rect,
@@ -58,8 +63,17 @@ namespace UnityTemplateProjects.Editor
                     formulaObject.Update();
                     // Debug.Log(EditorJsonUtility.ToJson(formulaObject.targetObject));
                 }
-
+                
                 EditorGUI.indentLevel++;
+                var e = ((Formula) property.GetSerializedObject())._error;
+                if (!string.IsNullOrEmpty(e))
+                {
+                    rect.y += EditorGUIUtility.singleLineHeight;
+                    var r = rect;
+                    r.xMin += 16;
+                    EditorGUI.HelpBox(r, e, MessageType.Error);
+                }
+
                 var namedValues = property.FindPropertyRelative(nameof(Formula.NamedValues));
                 bool enabled = GUI.enabled;
                 GUI.enabled = false;
@@ -81,8 +95,26 @@ namespace UnityTemplateProjects.Editor
                     rect.y += EditorGUIUtility.singleLineHeight;
                     var nameProp = elt.FindPropertyRelative(nameof(FormulaParam.Name));
                     var valProp = elt.FindPropertyRelative(nameof(FormulaParam.Value));
-                    EditorGUI.PropertyField(rect, valProp, new GUIContent(nameProp.stringValue));
-                    
+                    var flagProp = elt.FindPropertyRelative(nameof(FormulaParam.IsSingleFloat));
+                    var valueRect = rect;
+                    var flagsRect = rect;
+                    var flagPRopWidth = 100;
+                    valueRect.xMax -= flagPRopWidth;
+                    flagsRect.xMin = flagsRect.xMax - flagPRopWidth;
+                    if(!flagProp.boolValue)
+                        EditorGUI.PropertyField(valueRect, valProp, new GUIContent(nameProp.stringValue));
+                    else
+                    {
+                        EditorGUI.PropertyField(valueRect, valProp.FindPropertyRelative(nameof(Vector3.x)),
+                            new GUIContent(nameProp.stringValue));
+                        // valProp.vector3Value = 
+                    }
+
+                    var w = EditorGUIUtility.labelWidth;
+                    EditorGUIUtility.labelWidth = 50;
+                    EditorGUI.PropertyField(flagsRect, flagProp, new GUIContent("Float"));
+                    EditorGUIUtility.labelWidth = w;
+
 
                 }
 

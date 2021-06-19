@@ -158,7 +158,7 @@ namespace ShuntingYard
                             variableParam = variables[idx];
 
                         usedValues |= 1ul << idx; 
-                        nodes.Add(new EvalGraph.Node(Op.Const, variableParam.Value));
+                        nodes.Add(new EvalGraph.Node(Op.Const, variableParam.IsSingleFloat ? new float3(variableParam.Value.x) : (float3)variableParam.Value));
                     }
 
                     break;
@@ -239,6 +239,14 @@ namespace ShuntingYard
                     case "cos":
                         CheckArgCount(1, ref usedValues);
                         nodes.Add(new EvalGraph.Node(Op.Cos));
+                        break;
+                    case "abs":
+                        CheckArgCount(1, ref usedValues);
+                        nodes.Add(new EvalGraph.Node(Op.Abs));
+                        break;
+                    case "saturate":
+                        CheckArgCount(1, ref usedValues);
+                        nodes.Add(new EvalGraph.Node(Op.Saturate));
                         break;
                     case "tan":
                         CheckArgCount(1, ref usedValues);

@@ -78,6 +78,12 @@ namespace UnityTemplateProjects
                         case Op.Cos:
                             Push(math.cos(Pop()));
                             break;
+                        case Op.Abs:
+                            Push(math.abs(Pop()));
+                            break;
+                        case Op.Saturate:
+                            Push(math.saturate(Pop()));
+                            break;
                         case Op.Tan:
                             Push(math.tan(Pop()));
                             break;
