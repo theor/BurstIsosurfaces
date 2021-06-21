@@ -25,13 +25,13 @@ namespace UnityTemplateProjects
 
             public Node(Op op, float3 val = default)
             {
-                Assert.AreNotEqual(Op.Param, op);
+                Assert.AreNotEqual(Op.Param_0, op);
                 Op = op;
                 Val = val;
                 Index = 0;
             }
 
-            public static Node Param(byte index) => new Node(Op.Param, index);
+            public static Node Param(byte index) => new Node(Op.Param_0, index);
 
             private Node(Op op, byte index)
             {
@@ -67,23 +67,23 @@ namespace UnityTemplateProjects
     public enum Op
     {
         None,
-        Const,
-        Param,
-        Add,Sub,
-        Mul,Div,
-        Mod,
-        Minus,
-        Abs,
-        Saturate,
-        X,Y,Z,
-        Sin,Cos,Tan,
-        CNoise,
-        SNoise,
-        SRDNoise,
-        Fbm,
-        Dist,
-        SqDist,
-        V3,
+        Const_0,
+        Param_0,
+        Add_2,Sub_2,
+        Mul_2,Div_2,
+        Mod_2,
+        Minus_1,
+        Abs_1,
+        Saturate_1,
+        X_1,Y_1,Z_1,
+        Sin_1,Cos_1,Tan_1,
+        CNoise_1,
+        SNoise_1,
+        SRDNoise_1,
+        Fbm_4,
+        Dist_2,
+        SqDist_2,
+        V3_3,
     }
 
     public static class Fbm

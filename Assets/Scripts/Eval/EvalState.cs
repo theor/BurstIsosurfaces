@@ -30,6 +30,7 @@ namespace UnityTemplateProjects
         {
             res = new EvalState().Run(graph, @params);
         }
+
         [BurstCompile]
         public unsafe float3 Run(in EvalGraph graph,  float3* @params)
         {
@@ -42,75 +43,75 @@ namespace UnityTemplateProjects
                     var node = graph.Nodes[_current];
                     switch (node.Op)
                     {
-                        case Op.Const:
+                        case Op.Const_0:
                             Push(node.Val);
                             break;
-                        case Op.Param:
+                        case Op.Param_0:
                             Push(@params[node.Index]);
                             break;
-                        case Op.Add:
+                        case Op.Add_2:
                             Push(Pop() + Pop());
                             break;
-                        case Op.Sub:
+                        case Op.Sub_2:
                             Push(Pop() - Pop());
                             break;
-                        case Op.Div:
+                        case Op.Div_2:
                             Push(Pop() / Pop());
                             break;
-                        case Op.Mul:
+                        case Op.Mul_2:
                             Push(Pop() * Pop());
                             break;
-                        case Op.Mod:
+                        case Op.Mod_2:
                             Push(Pop() % Pop());
                             break;
-                        case Op.X:
+                        case Op.X_1:
                             Push(Pop().x);
                             break;
-                        case Op.Y:
+                        case Op.Y_1:
                             Push(Pop().y);
                             break;
-                        case Op.Z:
+                        case Op.Z_1:
                             Push(Pop().z);
                             break;
-                        case Op.Sin:
+                        case Op.Sin_1:
                             Push(math.sin(Pop()));
                             break;
-                        case Op.Cos:
+                        case Op.Cos_1:
                             Push(math.cos(Pop()));
                             break;
-                        case Op.Abs:
+                        case Op.Abs_1:
                             Push(math.abs(Pop()));
                             break;
-                        case Op.Saturate:
+                        case Op.Saturate_1:
                             Push(math.saturate(Pop()));
                             break;
-                        case Op.Tan:
+                        case Op.Tan_1:
                             Push(math.tan(Pop()));
                             break;
-                        case Op.Dist:
+                        case Op.Dist_2:
                             Push(math.distance(Pop(),Pop()));
                             break;
-                        case Op.SqDist:
+                        case Op.SqDist_2:
                             Push(math.distancesq(Pop(),Pop()));
                             break;
-                        case Op.Fbm:
+                        case Op.Fbm_4:
                             Push(Fbm.fbm(Pop(),Pop().x,(int) Pop().x,Pop().x));
                             break;
-                        case Op.CNoise:
+                        case Op.CNoise_1:
                             Push(noise.cnoise(Pop()));
                             break;
-                        case Op.SNoise:
+                        case Op.SNoise_1:
                             Push(noise.snoise(Pop()));
                             break;
-                        case Op.SRDNoise:
+                        case Op.SRDNoise_1:
                             var float3 = Pop();
                             Push(noise.srdnoise(float3.xy, float3.z));
                             break;
-                        case Op.V3:
+                        case Op.V3_3:
                             Push(new float3(Pop().x, Pop().x, Pop().x));
                             break;
                         default:
-                            throw new NotImplementedException(string.Format("{0}", node.Op));
+                            throw new NotImplementedException(string.Format("Operator {0} is not implemented", node.Op));
                     }
 
                     _current++;

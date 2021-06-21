@@ -16,7 +16,7 @@ public class ParsingEvaluationTests : EvaluationTestsBase
     {
         get
         {
-            TestCaseData F(float3 a, string s, params (string,float3)[] @params) => new TestCaseData(a, s, @params);
+            TestCaseData F(float3 a, string s, params (string,float3)[] @params) => new TestCaseData(a, s, @params).SetName($"{s} = {a} {string.Join(", ", @params)}");
             yield return F(1, "1");
             yield return F(3, "1+2");
             yield return F(3, "1+x", ("x",2));
@@ -55,16 +55,15 @@ public class EvaluationTestsBase
                 };
                 j.Run();
             }
+
+            Debug.Log($"Result: {j.Result.Value}");
+            Assert.AreEqual(result, j.Result.Value);
         }
-        catch (Exception)
+        finally
         {
             j.EvalGraph.Dispose();
             j.Result.Dispose();
-            throw;
         }
-
-        Debug.Log($"Result: {j.Result.Value}");
-        Assert.AreEqual(result, j.Result.Value);
     }
 
     protected void ParseRun(float3 result, string input, Dictionary<string, float3> variables, params (string,float3)[] @params)
@@ -83,7 +82,7 @@ public class EvaluationTests : EvaluationTestsBase
     [Test]
     public void ConstFloat3()
     {
-        Run(new float3(1, 2, 3), new[] {new EvalGraph.Node(Op.Const, new float3(1, 2, 3))});
+        Run(new float3(1, 2, 3), new[] {new EvalGraph.Node(Op.Const_0, new float3(1, 2, 3))});
     }
 
     [Test]
@@ -93,7 +92,7 @@ public class EvaluationTests : EvaluationTestsBase
         {
             EvalGraph.Node.Param(0),
             EvalGraph.Node.Param(1),
-            new EvalGraph.Node(Op.Add),
+            new EvalGraph.Node(Op.Add_2),
         }, new float3(1, 2, 0), new float3(0, 0, 3));
     }
 
@@ -102,9 +101,9 @@ public class EvaluationTests : EvaluationTestsBase
     {
         Run(new float3(5, 7, 9), new[]
         {
-            new EvalGraph.Node(Op.Const, new float3(1, 2, 3)),
-            new EvalGraph.Node(Op.Const, new float3(4, 5, 6)),
-            new EvalGraph.Node(Op.Add),
+            new EvalGraph.Node(Op.Const_0, new float3(1, 2, 3)),
+            new EvalGraph.Node(Op.Const_0, new float3(4, 5, 6)),
+            new EvalGraph.Node(Op.Add_2),
         });
     }
 
@@ -113,9 +112,9 @@ public class EvaluationTests : EvaluationTestsBase
     {
         Run(new float3(2), new[]
         {
-            new EvalGraph.Node(Op.Const, 3f),
-            new EvalGraph.Node(Op.Const, 6f),
-            new EvalGraph.Node(Op.Div),
+            new EvalGraph.Node(Op.Const_0, 3f),
+            new EvalGraph.Node(Op.Const_0, 6f),
+            new EvalGraph.Node(Op.Div_2),
         });
     }
 }

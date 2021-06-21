@@ -116,6 +116,52 @@ namespace ShuntingYard
         Coma = 32,
     }
 
+    public static class Functions
+    {
+        public readonly struct FunctionDefinition
+        {
+            public readonly int ArgumentCount;
+            public readonly Op OpCode;
+
+            public FunctionDefinition(Op opCode, int argumentCount)
+            {
+                ArgumentCount = argumentCount;
+                OpCode = opCode;
+            }
+        }
+
+        private static Dictionary<string, List<FunctionDefinition>> _defs;
+        public static bool TryGetOverloads(string functionId, out List<FunctionDefinition> overloads)
+        {
+            if (_defs == null)
+                Init();
+            return _defs.TryGetValue(functionId, out overloads);
+        }
+
+        
+        private static void Init()
+        {
+            var ops = Enum.GetValues(typeof(Op)).Cast<Op>().ToArray();
+            _defs = new Dictionary<string, List<FunctionDefinition>>(ops.Length, StringComparer.OrdinalIgnoreCase);
+            foreach (Op op in ops)
+            {
+                if(op == Op.None)
+                    continue;
+                var str = op.ToString();
+                int underscoreIndex = str.LastIndexOf('_');
+                if(underscoreIndex < 0)
+                    throw new InvalidDataException($"Operator {op} must be suffixed with an underscore and the number of expected parameters. If it takes 2 arguments, it must be named {op}_2.");
+                var opName = str.Substring(0, underscoreIndex);
+                string arityString = str.Substring(underscoreIndex + 1);
+                if(!int.TryParse(arityString, out int arity))
+                    throw new InvalidDataException($"Operator {op}'s argument count is not a valid int: '{arityString}'.");
+                if(!_defs.TryGetValue(opName, out var defs))
+                    _defs.Add(opName, defs = new List<FunctionDefinition>());
+                defs.Add(new FunctionDefinition(op, arity));
+            }
+        }
+    }
+
     public static class Translator
     {
         public static EvalGraph.Node[] Translate(INode node, List<FormulaParam> variables, List<string> parameters,
@@ -134,7 +180,7 @@ namespace ShuntingYard
             switch (node)
             {
                 case ExpressionValue v:
-                    nodes.Add(new EvalGraph.Node(Op.Const, v.F));
+                    nodes.Add(new EvalGraph.Node(Op.Const_0, v.F));
                     break;
                 case Variable variable:
                     var paramIndex = formulaParams.IndexOf(variable.Id);
@@ -158,7 +204,7 @@ namespace ShuntingYard
                             variableParam = variables[idx];
 
                         usedValues |= 1ul << idx; 
-                        nodes.Add(new EvalGraph.Node(Op.Const, variableParam.IsSingleFloat ? new float3(variableParam.Value.x) : (float3)variableParam.Value));
+                        nodes.Add(new EvalGraph.Node(Op.Const_0, variableParam.IsSingleFloat ? new float3(variableParam.Value.x) : (float3)variableParam.Value));
                     }
 
                     break;
@@ -167,7 +213,7 @@ namespace ShuntingYard
                     if(u.Type == OpType.Plus)
                         break;
                     if(u.Type == OpType.Minus)
-                        nodes.Add(new EvalGraph.Node(Op.Minus));
+                        nodes.Add(new EvalGraph.Node(Op.Minus_1));
                     else
                         throw new NotImplementedException(u.Type.ToString());
                     break;
@@ -177,11 +223,11 @@ namespace ShuntingYard
                     Rec(nodes, variables, bin.A, formulaParams, ref usedValues);
                     nodes.Add(new EvalGraph.Node(bin.Type switch
                     {
-                        OpType.Add => Op.Add,
-                        OpType.Sub => Op.Sub,
-                        OpType.Mul => Op.Mul,
-                        OpType.Div => Op.Div,
-                        OpType.Mod => Op.Mod,
+                        OpType.Add => Op.Add_2,
+                        OpType.Sub => Op.Sub_2,
+                        OpType.Mul => Op.Mul_2,
+                        OpType.Div => Op.Div_2,
+                        OpType.Mod => Op.Mod_2,
                         _ => throw new NotImplementedException(bin.Type.ToString())
                     }));
                     break;
@@ -193,88 +239,16 @@ namespace ShuntingYard
                     for (int i = n - 1; i >= 0; i--)
                         Rec(nodes, variables, f.Arguments[i], formulaParams, ref argUsedValues);
                 }
-
-                switch (f.Id)
-                {
-                    case "x":
-                        CheckArgCount(1, ref usedValues);
-                        nodes.Add(new EvalGraph.Node(Op.X));
-                        break;
-                    case "y":
-                        CheckArgCount(1, ref usedValues);
-                        nodes.Add(new EvalGraph.Node(Op.Y));
-                        break;
-                    case "z":
-                        CheckArgCount(1, ref usedValues);
-                        nodes.Add(new EvalGraph.Node(Op.Z));
-                        break;
-                    case "cnoise":
-                        CheckArgCount(1, ref usedValues);
-                        nodes.Add(new EvalGraph.Node(Op.CNoise));
-                        break;
-                    case "snoise":
-                        CheckArgCount(1, ref usedValues);
-                        nodes.Add(new EvalGraph.Node(Op.SNoise));
-                        break;
-                    case "srdnoise":
-                        CheckArgCount(1, ref usedValues);
-                        nodes.Add(new EvalGraph.Node(Op.SRDNoise));
-                        break;
-                    case "v3":
-                        CheckArgCount(3, ref usedValues);
-                        nodes.Add(new EvalGraph.Node(Op.V3));
-                        break;
-                    case "dist":
-                        CheckArgCount(2, ref usedValues);
-                        nodes.Add(new EvalGraph.Node(Op.Dist));
-                        break;
-                    case "sqdist":
-                        CheckArgCount(2, ref usedValues);
-                        nodes.Add(new EvalGraph.Node(Op.SqDist));
-                        break;
-                    case "sin":
-                        CheckArgCount(1, ref usedValues);
-                        nodes.Add(new EvalGraph.Node(Op.Sin));
-                        break;
-                    case "cos":
-                        CheckArgCount(1, ref usedValues);
-                        nodes.Add(new EvalGraph.Node(Op.Cos));
-                        break;
-                    case "abs":
-                        CheckArgCount(1, ref usedValues);
-                        nodes.Add(new EvalGraph.Node(Op.Abs));
-                        break;
-                    case "saturate":
-                        CheckArgCount(1, ref usedValues);
-                        nodes.Add(new EvalGraph.Node(Op.Saturate));
-                        break;
-                    case "tan":
-                        CheckArgCount(1, ref usedValues);
-                        nodes.Add(new EvalGraph.Node(Op.Tan));
-                        break;
-                    case "fbm":
-                        CheckArgCount(4, ref usedValues);
-                        nodes.Add(new EvalGraph.Node(Op.Fbm));
-                        break;
-                    // case "f3": case "v3":
-                    // nodes.Add();
-                    //         case "tan": return math.tan(Eval(f.Arguments.Single(), variables));
-                    //         case "sin": return math.sin(Eval(f.Arguments.Single(), variables));
-                    //         case "cos": return math.sin(Eval(f.Arguments.Single(), variables));
-                    //         case "sqrt": return math.sqrt(Eval(f.Arguments.Single(), variables));
-                    //         case "abs": return math.abs(Eval(f.Arguments.Single(), variables));
-                    //         case "pow":
-                    //             CheckArgCount(2);
-                    //             return math.pow(Eval(f.Arguments[0], variables), Eval(f.Arguments[1], variables));
-                    //         case "min":
-                    //             CheckArgCount(2);
-                    //             return math.min(Eval(f.Arguments[0], variables), Eval(f.Arguments[1], variables));
-                    //         case "max":
-                    //             CheckArgCount(2);
-                    //             return math.max(Eval(f.Arguments[0], variables), Eval(f.Arguments[1], variables));
-                    default: throw new InvalidDataException($"Unknown function {f.Id}");
-                }
-
+                
+                if(!Functions.TryGetOverloads(f.Id, out var overloads))
+                    throw new InvalidDataException($"Unknown function {f.Id}");
+                var overloadIndex = overloads.FindIndex(o => o.ArgumentCount == f.Arguments.Count);
+                if(overloadIndex == -1)
+                    throw new InvalidDataException($"Function {f.Id} expects {String.Join(" or ", overloads.Select(o => o.ArgumentCount).ToString())} arguments, got {f.Arguments.Count}");
+                var overload = overloads[overloadIndex];
+                
+                CheckArgCount(overload.ArgumentCount, ref usedValues);
+                nodes.Add(new EvalGraph.Node(overload.OpCode));
                 break;
 
                 default: throw new NotImplementedException(node.ToString());

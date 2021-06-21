@@ -160,6 +160,7 @@ MonoBehaviour:
     NamedValues:
     - Name: f
       Value: {x: 7, y: 0, z: 0}
+      IsSingleFloat: 1
     Params:
     - t
 --- !u!65 &753493044
