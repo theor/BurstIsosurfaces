@@ -9,7 +9,7 @@ using UnityEngine.Assertions;
 namespace UnityTemplateProjects
 {
     [BurstCompile]
-    public struct GenJob : IJob
+    public struct DualContouringJob : IJob
     {
         public Mesh.MeshData OutputMesh;
         public int3 Coords;
@@ -24,8 +24,6 @@ namespace UnityTemplateProjects
 
         [ReadOnly]
         public NativeArray<ushort> EdgeTable;
-        [ReadOnly]
-        public NativeArray<int> TriTable;
         [ReadOnly]
         public NativeArray<Marching.byte2> EdgeConnection;
         [ReadOnly]
@@ -68,14 +66,16 @@ namespace UnityTemplateProjects
             var outputNormals = OutputMesh.GetVertexData<float3>(stream:1);
             var outputTris = OutputMesh.GetIndexData<int>();
 
+            var vertIndices = new NativeArray<int>(outputVerts.Length, Allocator.Temp);
+            
             var v1 = VoxelSide + 1;
             var v3 = VoxelSide + 3;
 
             int v = 0;
             int ind = 0;
-            var delta = Scale / (float)VoxelSide;
+            var delta = Scale / (VoxelSide - 1f);
                 
-            float3* edgePoints = stackalloc float3[12];
+            // float3* edgePoints = stackalloc float3[12];
             float3* normals = stackalloc float3[12];
                      
             Marching.byte3* vertexOffsets = stackalloc Marching.byte3[8];
@@ -103,11 +103,9 @@ namespace UnityTemplateProjects
                         MeshGen.GetCornerCoords(localCoords, v3, out var corners);
 
                         MeshGen.OctFloat voxelDensities;
-                        MeshGen.OctFloat voxelDensitiesBool;
                         for (int j = 0; j < 8; j++)
                         {
                             voxelDensities[j] = Densities[corners[j]];
-                            voxelDensitiesBool[j] = voxelDensities[j] < Isolevel ? -1 : 1;
                         }
                             
                         // Debug.Log($"voxel {coords} {localCoords} = {coords+localCoords}\ncorners {corners}\ndensities {voxelDensities}\nbool {voxelDensitiesBool}");
@@ -124,10 +122,57 @@ namespace UnityTemplateProjects
                         ushort edgeMask = EdgeTable[cubeindex];
 
                         // Debug.Log($"{x} {y} {z} index {cubeindex:X} mask {edgeMask:X}");
-                        if(edgeMask == 0)
-                            continue;
+                        // if(edgeMask == 0)
+                        //     continue;
 
-                        for (int i = 0; i < 12; i++)
+                        // alloc vertex and index
+                        // index is in base 1 (so 0 is invalid)
+                        var vertIndex = MeshGen.CoordsToIndexNoPadding(localCoords, VoxelSide);
+                        outputVerts[v] = (float3)localCoords * delta;
+                        outputNormals[v] = new float3(0, 1, 0);
+                        Debug.Log($"pos {localCoords} vi {vertIndex} index {ind}");
+                        vertIndices[vertIndex] = ++ind;
+                        v++;
+                    }
+                }
+            }
+
+            void AddTriIndex(int3 c, int voxelSide, ref int ind)
+            {
+                var coordsToIndex = MeshGen.CoordsToIndexNoPadding(c, voxelSide);
+                Debug.Log($"Add {c} vi {vertIndices[coordsToIndex]} at {ind}");
+                // indices in BASE 1
+                outputTris[ind++] = vertIndices[coordsToIndex] - 1;
+            }
+
+            ind = 0;
+            // delta = Scale / (VoxelSide - 1f);
+            for (int x = 0; x < VoxelSide - 1; x++)
+            {
+                var coordsX = (Coords.x + x * delta);
+                for (int y = 0; y < VoxelSide - 1; y++)
+                {
+                    var coordsY = (Coords.y + y * delta);
+                    for (int z = 0; z < VoxelSide - 1; z++)
+                    {
+                        var coordsZ = (Coords.z + z * delta);
+                        // edges 5, 6, 10
+                        // 10 : x,y,z x+1,y,z x+1,y,z+1 x,y,z+1
+                        AddTriIndex(new int3(x + 1, y, z), VoxelSide, ref ind);
+                        AddTriIndex(new int3(x, y, z), VoxelSide, ref ind);
+                        AddTriIndex(new int3(x, y, z + 1), VoxelSide, ref ind);
+                        
+                        AddTriIndex(new int3(x + 1, y, z), VoxelSide, ref ind);
+                        AddTriIndex(new int3(x, y, z + 1), VoxelSide, ref ind);
+                        AddTriIndex(new int3(x + 1, y, z + 1), VoxelSide, ref ind);
+
+                    }
+                }
+            }
+
+            // 2: make quads for each edge
+            /*
+             *for (int i = 0; i < 12; i++)
                         {
                             //if there is an intersection on this edge
                             if ((edgeMask & (1 << i)) != 0)
@@ -193,12 +238,21 @@ namespace UnityTemplateProjects
 
                         // if(coordsY < math.sin(coordsX) + math.cos(coordsZ))
                         // CreateCube(ref v, ref ind, x, y, z);
-                    }
-                }
-            }
+             * 
+             */
 
             IndexVertexCounts[0] = ind;
             IndexVertexCounts[1] = v;
+            Debug.Log($"v {v} i {ind}");
+            for (int i = 0; i < v; i++)
+            {
+                Debug.Log(outputVerts[i]);
+            }
+            for (int i = 0; i < ind; i++)
+            {
+                Debug.Log(outputTris[i]);
+            }
+            
             // for (int j = i; j < outputTris.Length; j++)
             // {
             //     outputTris[j] = 0;

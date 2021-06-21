@@ -96,32 +96,69 @@ namespace UnityTemplateProjects
             OutputMeshData = Mesh.AllocateWritableMeshData(1);
 
             var h = djob.ScheduleParallel(densityCount, 256, default);
-            // _meshGen.DensityFormula.AddDependency(h);
-            // var h = djob.Schedule(densityCount,_handle);
-            var job = new GenJob
+
+            int maxIndexCount;
+            int maxVertexCount;// maxCubeCount * 6 * 4;
+
+
+
+            if (_meshGen.Algorithm == Algorithm.MarchingCube)
             {
-                Densities = _densities,
-                Scale = Scale,
-                VoxelSide = _meshGen.VoxelSide,
-                OutputMesh = this.OutputMeshData[0],
-                Coords = Coords,
-                IndexVertexCounts = this._indexVertexCounts,
-                EdgeTable = _meshGen.EdgeTable,
-                TriTable = _meshGen.TriTable,
-                EdgeConnection = _meshGen.EdgeConnection,
-                EdgeDirection = _meshGen.EdgeDirection,
-                
-            };
-            var maxCubeCount = _meshGen.VoxelSide * _meshGen.VoxelSide * _meshGen.VoxelSide;
-            var maxTriCount = maxCubeCount*5;// maxCubeCount * 6 /*faces*/ * 2 /*tri per face*/;
-            var maxIndexCount = maxTriCount * 3;
+
+                var maxCubeCount = _meshGen.VoxelSide * _meshGen.VoxelSide * _meshGen.VoxelSide;
+                var maxTriCount = maxCubeCount * 5; // maxCubeCount * 6 /*faces*/ * 2 /*tri per face*/;
+                maxIndexCount = maxTriCount * 3;
+                maxVertexCount = maxIndexCount;
+            }
+            else
+            {
+                maxVertexCount = (_meshGen.VoxelSide+1) * (_meshGen.VoxelSide+1) * (_meshGen.VoxelSide+1);
+                var maxTriCount = maxVertexCount * 12;
+                maxIndexCount = maxTriCount * 3;
+            }
             Assert.IsTrue(maxIndexCount < ushort.MaxValue);
-            job.OutputMesh.SetIndexBufferParams(maxIndexCount, IndexFormat.UInt32);
-            var maxVertexCount = maxIndexCount;// maxCubeCount * 6 * 4;
-            job.OutputMesh.SetVertexBufferParams(maxVertexCount,
+            OutputMeshData[0].SetIndexBufferParams(maxIndexCount, IndexFormat.UInt32);
+            OutputMeshData[0].SetVertexBufferParams(maxVertexCount,
                 new VertexAttributeDescriptor(VertexAttribute.Position),
                 new VertexAttributeDescriptor(VertexAttribute.Normal, stream: 1));
-            this._handle = job.Schedule(h);
+
+            if (_meshGen.Algorithm == Algorithm.MarchingCube)
+            {
+                MarchingCubeJob job = new MarchingCubeJob
+                {
+                    Densities = _densities,
+                    Scale = Scale,
+                    VoxelSide = _meshGen.VoxelSide,
+                    OutputMesh = this.OutputMeshData[0],
+                    Coords = Coords,
+                    IndexVertexCounts = this._indexVertexCounts,
+                    EdgeTable = _meshGen.EdgeTable,
+                    TriTable = _meshGen.TriTable,
+                    EdgeConnection = _meshGen.EdgeConnection,
+                    EdgeDirection = _meshGen.EdgeDirection,
+                    
+                };
+                this._handle = job.Schedule(h);
+            }
+            else
+            {
+
+                var job = new DualContouringJob()
+                {
+                    Densities = _densities,
+                    Scale = Scale,
+                    VoxelSide = _meshGen.VoxelSide,
+                    OutputMesh = this.OutputMeshData[0],
+                    Coords = Coords,
+                    IndexVertexCounts = this._indexVertexCounts,
+                    EdgeTable = _meshGen.EdgeTable,
+                    EdgeConnection = _meshGen.EdgeConnection,
+                    EdgeDirection = _meshGen.EdgeDirection,
+
+                };
+                this._handle = job.Schedule(h);
+            }
+
             // Debug.Log($"Generate {Coords} max vert {maxVertexCount} max indices {maxIndexCount}");
             _sw = Stopwatch.StartNew();
             return _handle;

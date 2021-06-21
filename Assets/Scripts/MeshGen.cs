@@ -52,6 +52,8 @@ namespace UnityTemplateProjects
         [NonSerialized]
         public EvalGraph DensityFormulaEvaluator;
 
+        public Algorithm Algorithm;
+
 
         private void Reset()
         {
@@ -156,6 +158,10 @@ namespace UnityTemplateProjects
         {
             return (coords.x + 1) + (coords.y + 1) * v1 * v1 + (coords.z + 1) * v1;
         }
+        public static int CoordsToIndexNoPadding(int3 coords, int v1)
+        {
+            return coords.x + coords.y * v1 * v1 + coords.z * v1;
+        }
 
 
         public static float Density(float3 coords)
@@ -188,5 +194,11 @@ namespace UnityTemplateProjects
             _queue.Clear();
             _currentHandle.Complete();
         }
+    }
+
+    public enum Algorithm
+    {
+        MarchingCube,
+        DualContouring,
     }
 }

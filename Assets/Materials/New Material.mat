@@ -8,8 +8,8 @@ Material:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: New Material
-  m_Shader: {fileID: -6465566751694194690, guid: d1047903c169d9f4392c216133e42987, type: 3}
-  m_ShaderKeywords: 
+  m_Shader: {fileID: -6465566751694194690, guid: cc2cd5ae30bd44d4386790b740e14ae1, type: 3}
+  m_ShaderKeywords: SHOW_NORMALS TRIPLANAR_CORRECT_PROJECTED_U TRIPLANAR_UV_OFFSET
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 1
   m_DoubleSidedGI: 0
@@ -19,7 +19,23 @@ Material:
   m_SavedProperties:
     serializedVersion: 3
     m_TexEnvs:
+    - Main:
+        m_Texture: {fileID: 2800000, guid: 7c0473293f371c441995e120422edc11, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - Normals:
+        m_Texture: {fileID: 2800000, guid: d8e77e90e85203f4d8faf91fe929463e, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - Side:
+        m_Texture: {fileID: 2800000, guid: 17270ceeed5cd584dbfd299dd40c1dd7, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
     - SideNormal:
+        m_Texture: {fileID: 2800000, guid: 08416759d9ebd3a4fa399f5252c2aab2, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - SideNormals:
         m_Texture: {fileID: 2800000, guid: 08416759d9ebd3a4fa399f5252c2aab2, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
@@ -83,6 +99,10 @@ Material:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
+    - _triplanarCustomFunction_774ac0ddf99c4febb00eba866729cc23_SideBump_8:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
     - unity_Lightmaps:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
@@ -97,7 +117,11 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
+    - BlendingPower: 7.3
     - NormalPow: 23.02
+    - SHOW_NORMALS: 1
+    - TRIPLANAR_CORRECT_PROJECTED_U: 1
+    - TRIPLANAR_UV_OFFSET: 1
     - _AlphaClip: 0
     - _Blend: 0
     - _BumpScale: 1
@@ -126,7 +150,8 @@ Material:
     - _WorkflowMode: 1
     - _ZWrite: 1
     m_Colors:
-    - SideTilingOffset: {r: 2, g: 2, b: 0, a: 0}
+    - MainTilingOffset: {r: 3, g: 3, b: 0, a: 0}
+    - SideTilingOffset: {r: 3, g: 3, b: 0, a: 0}
     - TopTilingOffset: {r: 2, g: 2, b: 0, a: 0}
     - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
     - _Color: {r: 1, g: 1, b: 1, a: 1}
