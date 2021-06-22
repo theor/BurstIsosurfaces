@@ -79,12 +79,12 @@ namespace UnityTemplateProjects
             var a = new NativeArray<EdgeCase>(16, allocator);
             a[0b0000] = new EdgeCase(0);
             a[0b0001] = new EdgeCase(4).Quad0(0,1,5,4);
-            a[0b0010] = new EdgeCase(4).Quad0(3,2,1,0);
-            a[0b0011] = new EdgeCase(8).Quad0(0,1,5,4).Quad1(3,2,1,0);
+            a[0b0010] = new EdgeCase(4).Quad0(4,5,6,7);
+            a[0b0011] = new EdgeCase(8).Quad0(0,1,5,4).Quad1(4,5,6,7);
             a[0b0100] = new EdgeCase(4).Quad0(0,4,7,3);
             a[0b0101] = new EdgeCase(8).Quad0(0,1,5,4).Quad1(7,3,0,4);
-            a[0b0110] = new EdgeCase(8).Quad0(3,2,1,0).Quad1(7,3,0,4);
-            a[0b0111] = new EdgeCase(12).Quad0(0,1,5,4).Quad1(3,2,1,0).Quad2(7,3,0,4);
+            a[0b0110] = new EdgeCase(8).Quad0(4,5,6,7).Quad1(7,3,0,4);
+            a[0b0111] = new EdgeCase(12).Quad0(0,1,5,4).Quad1(4,5,6,7).Quad2(7,3,0,4);
             for (int i = 0b1000; i <= 0b1111; i++)
             {
                 var edgeCase = a[(~i) & 0b00001111];
@@ -279,7 +279,7 @@ namespace UnityTemplateProjects
                         var localCoords = new int3(x, y, z);
                         var vertIndex = MeshGen.CoordsToIndexNoPadding(localCoords, v1);
                         var edgeCase = edgeMasks[vertIndex];
-                        Debug.Log($"{localCoords} mask verts {edgeCase.VertexCount}");
+                        // Debug.Log($"{localCoords} mask verts {edgeCase.VertexCount}");
                         if(edgeCase.VertexCount == 0)
                             continue;
                         for (int i = 0; i < edgeCase.VertexCount/4; i++)
@@ -293,7 +293,7 @@ namespace UnityTemplateProjects
 
             IndexVertexCounts[0] = ind;
             IndexVertexCounts[1] = v;
-            Debug.Log($"v {v} i {ind}");
+            // Debug.Log($"v {v} i {ind}");
             // for (int i = 0; i < v; i++)
             // {
             //     Debug.Log(outputVerts[i]);

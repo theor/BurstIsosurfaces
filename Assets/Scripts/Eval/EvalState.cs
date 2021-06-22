@@ -65,7 +65,7 @@ namespace UnityTemplateProjects
                             Push(Pop() * Pop());
                             break;
                         case Op.Mod_2:
-                            Push(Pop() % Pop());
+                            Push(math.fmod(Pop(), Pop()));
                             break;
                         case Op.X_1:
                             Push(Pop().x);
