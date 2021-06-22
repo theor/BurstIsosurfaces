@@ -1051,9 +1051,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 256e3a5e19fb4885a601406a0a1acd17, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  VoxelSide: 2
+  VoxelSide: 16
   DensityFormula:
-    Input: y(coords) - 0.25
+    Input: 0.25 - y(coords)
     NamedValues: []
     Params:
     - coords

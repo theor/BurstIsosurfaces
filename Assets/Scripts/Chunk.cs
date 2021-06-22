@@ -112,8 +112,9 @@ namespace UnityTemplateProjects
             }
             else
             {
-                maxVertexCount = (_meshGen.VoxelSide+1) * (_meshGen.VoxelSide+1) * (_meshGen.VoxelSide+1);
-                var maxTriCount = maxVertexCount * 12;
+                var vvv = (_meshGen.VoxelSide) * (_meshGen.VoxelSide) * (_meshGen.VoxelSide);
+                maxVertexCount = vvv * 7;
+                var maxTriCount = vvv * 6;
                 maxIndexCount = maxTriCount * 3;
             }
             // Assert.IsTrue(maxIndexCount < ushort.MaxValue);
@@ -151,7 +152,6 @@ namespace UnityTemplateProjects
                     OutputMesh = this.OutputMeshData[0],
                     Coords = Coords,
                     IndexVertexCounts = this._indexVertexCounts,
-                    EdgeTable = _meshGen.EdgeTable,
                     EdgeConnection = _meshGen.EdgeConnection,
                     EdgeDirection = _meshGen.EdgeDirection,
 
