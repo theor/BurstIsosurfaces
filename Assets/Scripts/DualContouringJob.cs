@@ -120,11 +120,11 @@ namespace UnityTemplateProjects
             // var f = 1f;
             return
                 new float3(
-                    d(Densities, new int3(-1, 0, 0)) -
+                    d(Densities, new int3(0, 0, 0)) -
                         d(Densities, new int3(1, 0, 0)),
-                    d(Densities, new int3(0, -1, 0)) -
+                    d(Densities, new int3(0, 0, 0)) -
                     d(Densities, new int3(0, 1, 0)),
-                    d(Densities, new int3(0, 0, -1)) -
+                    d(Densities, new int3(0, 0, 0)) -
                     d(Densities, new int3(0, 0, 1))
                 );
             // new float3(
@@ -210,7 +210,7 @@ namespace UnityTemplateProjects
                         edgeMasks[vertIndex] = edgeCase;
 
                         outputVerts[v] = (float3) localCoords * delta + 0.5f*delta;
-                        outputNormals[v] = new float3(0, 1, 0);
+                        outputNormals[v] = SampleNormal(localCoords);
                         
                         // Debug.Log($"pos {localCoords} vi {vertIndex} index {ind}");
                         vertIndices[vertIndex] = ++ind;
@@ -219,7 +219,7 @@ namespace UnityTemplateProjects
                 }
             }
 
-            void AddTriIndex(int3 c, ref int ind)
+            void AddTriIndex(int3 c)
             {
                 var coordsToIndex = MeshGen.CoordsToIndexNoPadding(c, v1);
                 // Debug.Log($"Add {c} vi {vertIndices[coordsToIndex]-1} at {ind}");
@@ -244,38 +244,34 @@ namespace UnityTemplateProjects
 
                 if (flipped)
                 {
-                    AddTriIndex(getV(vertices[0]), ref ind);
-                    AddTriIndex(getV(vertices[2]), ref ind);
-                    AddTriIndex(getV(vertices[1]), ref ind);
+                    AddTriIndex(getV(vertices[0]));
+                    AddTriIndex(getV(vertices[2]));
+                    AddTriIndex(getV(vertices[1]));
                 
-                    AddTriIndex(getV(vertices[0]), ref ind);
-                    AddTriIndex(getV(vertices[3]), ref ind);
-                    AddTriIndex(getV(vertices[2]), ref ind);
+                    AddTriIndex(getV(vertices[0]));
+                    AddTriIndex(getV(vertices[3]));
+                    AddTriIndex(getV(vertices[2]));
                 }
                 else
                 {
-                    AddTriIndex(getV(vertices[0]), ref ind);
-                    AddTriIndex(getV(vertices[1]), ref ind);
-                    AddTriIndex(getV(vertices[2]), ref ind);
+                    AddTriIndex(getV(vertices[0]));
+                    AddTriIndex(getV(vertices[1]));
+                    AddTriIndex(getV(vertices[2]));
                 
-                    AddTriIndex(getV(vertices[0]), ref ind);
-                    AddTriIndex(getV(vertices[2]), ref ind);
-                    AddTriIndex(getV(vertices[3]), ref ind);
+                    AddTriIndex(getV(vertices[0]));
+                    AddTriIndex(getV(vertices[2]));
+                    AddTriIndex(getV(vertices[3]));
                 }
             }
 
             ind = 0;
-            delta = Scale / ((float)VoxelSide);
             // delta = Scale / (VoxelSide - 1f);
             for (int x = 0; x < VoxelSide; x++)
             {
-                var coordsX = (Coords.x + x * delta);
                 for (int y = 0; y < VoxelSide; y++)
                 {
-                    var coordsY = (Coords.y + y * delta);
                     for (int z = 0; z < VoxelSide; z++)
                     {
-                        var coordsZ = (Coords.z + z * delta);
                         var localCoords = new int3(x, y, z);
                         var vertIndex = MeshGen.CoordsToIndexNoPadding(localCoords, v1);
                         var edgeCase = edgeMasks[vertIndex];
@@ -293,7 +289,7 @@ namespace UnityTemplateProjects
 
             IndexVertexCounts[0] = ind;
             IndexVertexCounts[1] = v;
-            // Debug.Log($"v {v} i {ind}");
+            Debug.Log($"v {v} i {ind}");
             // for (int i = 0; i < v; i++)
             // {
             //     Debug.Log(outputVerts[i]);
