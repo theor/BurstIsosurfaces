@@ -43,6 +43,9 @@ namespace UnityTemplateProjects
                     var node = graph.Nodes[_current];
                     switch (node.Op)
                     {
+                        case Op.Minus_1:
+                            Push(-Pop());
+                            break;
                         case Op.Const_0:
                             Push(node.Val);
                             break;

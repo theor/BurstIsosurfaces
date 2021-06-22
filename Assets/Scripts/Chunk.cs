@@ -112,7 +112,7 @@ namespace UnityTemplateProjects
             }
             else
             {
-                var vvv = (_meshGen.VoxelSide) * (_meshGen.VoxelSide) * (_meshGen.VoxelSide);
+                var vvv = (_meshGen.VoxelSide+1) * (_meshGen.VoxelSide+1) * (_meshGen.VoxelSide+1);
                 maxVertexCount = vvv * 7;
                 var maxTriCount = vvv * 6;
                 maxIndexCount = maxTriCount * 3;

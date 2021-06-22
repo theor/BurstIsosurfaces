@@ -57,31 +57,34 @@ namespace UnityTemplateProjects
         }
 
         /*
-         * v:         0
-         *          /
+         * v:         0          2 - 3     < this one
+         *  paper:  /              / | 
+         *    2 - 3              0   1 
+         *        |     
+         *        1      
+         * v:     1   0
+         *        | /
          *    2 - 3
-         *        |
-         *        1
          *
-         * v': 1 --- 5
-         *    /|    /|
-         *   2 +-- 6 |
-         *   | 0 --+ 4
-         *   |/    |/
-         *   3 --- 7
-         * 
+         * v': 1 --- 5    v': 7 --- 6
+         *    /|    /|       /|    /|
+         *   2 +-- 6 |      4 +-- 5 |
+         *   | 0 --+ 4      | 3 --+ 2
+         *   |/    |/       |/    |/
+         *   3 --- 7        0 --- 1
+         *  paper           actual from marching cube
          */
         static unsafe NativeArray<EdgeCase> EdgeCases(Allocator allocator)
         {
             var a = new NativeArray<EdgeCase>(16, allocator);
             a[0b0000] = new EdgeCase(0);
-            a[0b0001] = new EdgeCase(4).Quad0(1,0,4,5);
-            a[0b0010] = new EdgeCase(4).Quad0(4,5,6,7);
-            a[0b0011] = new EdgeCase(8).Quad0(1,0,4,5).Quad1(4,5,6,7);
-            a[0b0100] = new EdgeCase(4).Quad0(2,6,5,1);
-            a[0b0101] = new EdgeCase(8).Quad0(1,0,4,5).Quad1(7,4,0,3);
-            a[0b0110] = new EdgeCase(8).Quad0(4,5,6,7).Quad1(7,4,0,3);
-            a[0b0111] = new EdgeCase(12).Quad0(1,0,4,5).Quad1(4,5,6,7).Quad2(7,4,0,3);
+            a[0b0001] = new EdgeCase(4).Quad0(0,1,5,4);
+            a[0b0010] = new EdgeCase(4).Quad0(3,2,1,0);
+            a[0b0011] = new EdgeCase(8).Quad0(0,1,5,4).Quad1(3,2,1,0);
+            a[0b0100] = new EdgeCase(4).Quad0(0,4,7,3);
+            a[0b0101] = new EdgeCase(8).Quad0(0,1,5,4).Quad1(7,3,0,4);
+            a[0b0110] = new EdgeCase(8).Quad0(3,2,1,0).Quad1(7,3,0,4);
+            a[0b0111] = new EdgeCase(12).Quad0(0,1,5,4).Quad1(3,2,1,0).Quad2(7,3,0,4);
             for (int i = 0b1000; i <= 0b1111; i++)
             {
                 var edgeCase = a[(~i) & 0b00001111];
@@ -148,7 +151,7 @@ namespace UnityTemplateProjects
 
             int v = 0;
             int ind = 0;
-            var delta = Scale / (VoxelSide - 1f);
+            var delta = Scale / ((float)VoxelSide);
                 
             // float3* edgePoints = stackalloc float3[12];
             float3* normals = stackalloc float3[12];
@@ -168,16 +171,12 @@ namespace UnityTemplateProjects
             // 0.25 - y(coords)
             var edgeTable = EdgeCases(Allocator.Temp);
                 
-            var coords = Coords*VoxelSide;
-            for (int x = 0; x < VoxelSide; x++)
+            for (int x = 0; x < v1; x++)
             {
-                var coordsX = (Coords.x + x*delta);
-                for (int y = 0; y < VoxelSide; y++)
+                for (int y = 0; y < v1; y++)
                 {
-                    var coordsY = (Coords.y + y*delta);
-                    for (int z = 0; z < VoxelSide; z++)
+                    for (int z = 0; z < v1; z++)
                     {
-                        var coordsZ = (Coords.z + z * delta);
                         var localCoords = new int3(x, y, z);
 
                         MeshGen.GetCornerCoords(localCoords, v3, out var corners);
@@ -191,38 +190,39 @@ namespace UnityTemplateProjects
                         // Debug.Log($"voxel {coords} {localCoords} = {coords+localCoords}\ncorners {corners}\ndensities {voxelDensities}\nbool {voxelDensitiesBool}");
                         
                         byte cubeindex = 0;
-                        if (voxelDensities[5] < Isolevel) cubeindex |= 1;
-                        if (voxelDensities[2] < Isolevel) cubeindex |= 2;
-                        if (voxelDensities[7] < Isolevel) cubeindex |= 4;
-                        if (voxelDensities[6] < Isolevel) cubeindex |= 8;
-                        
+                        if (voxelDensities[1] < Isolevel) cubeindex |= 1;
+                        if (voxelDensities[6] < Isolevel) cubeindex |= 2;
+                        if (voxelDensities[3] < Isolevel) cubeindex |= 4;
+                        if (voxelDensities[2] < Isolevel) cubeindex |= 8;
 
+                        // cubeindex = 0b0111;
+                        // cubeindex = 0b1000;
                         var edgeCase = edgeTable[cubeindex];
 
-                        Debug.Log($"{x} {y} {z} index {cubeindex:X} mask {edgeCase.VertexCount}");
+                        // Debug.Log($"{x} {y} {z} index {cubeindex:X} mask {edgeCase.VertexCount}");
                         
                         
 
                         // alloc vertex and index
                         // index is in base 1 (so 0 is invalid)
-                        var vertIndex = MeshGen.CoordsToIndexNoPadding(localCoords, VoxelSide);
+                        var vertIndex = MeshGen.CoordsToIndexNoPadding(localCoords, v1);
                         
                         edgeMasks[vertIndex] = edgeCase;
 
-                        outputVerts[v] = (float3) localCoords * delta;// + 0.5f*delta;
+                        outputVerts[v] = (float3) localCoords * delta + 0.5f*delta;
                         outputNormals[v] = new float3(0, 1, 0);
                         
-                        Debug.Log($"pos {localCoords} vi {vertIndex} index {ind}");
+                        // Debug.Log($"pos {localCoords} vi {vertIndex} index {ind}");
                         vertIndices[vertIndex] = ++ind;
                         v++;
                     }
                 }
             }
 
-            void AddTriIndex(int3 c, int voxelSide, ref int ind)
+            void AddTriIndex(int3 c, ref int ind)
             {
-                var coordsToIndex = MeshGen.CoordsToIndexNoPadding(c, voxelSide);
-                Debug.Log($"Add {c} vi {vertIndices[coordsToIndex]-1} at {ind}");
+                var coordsToIndex = MeshGen.CoordsToIndexNoPadding(c, v1);
+                // Debug.Log($"Add {c} vi {vertIndices[coordsToIndex]-1} at {ind}");
                 // indices in BASE 1
                 outputTris[ind++] = vertIndices[coordsToIndex] - 1;
             }
@@ -239,43 +239,45 @@ namespace UnityTemplateProjects
                     5 => new int3(x+1,y+1,z),
                     6 => new int3(x+1,y+1,z+1),
                     7 => new int3(x,y+1,z+1),
+                    _ => throw new System.NotImplementedException(),
                 };
 
                 if (flipped)
                 {
-                    AddTriIndex(getV(vertices[0]), voxelSide, ref ind);
-                    AddTriIndex(getV(vertices[2]), voxelSide, ref ind);
-                    AddTriIndex(getV(vertices[1]), voxelSide, ref ind);
+                    AddTriIndex(getV(vertices[0]), ref ind);
+                    AddTriIndex(getV(vertices[2]), ref ind);
+                    AddTriIndex(getV(vertices[1]), ref ind);
                 
-                    AddTriIndex(getV(vertices[0]), voxelSide, ref ind);
-                    AddTriIndex(getV(vertices[3]), voxelSide, ref ind);
-                    AddTriIndex(getV(vertices[2]), voxelSide, ref ind);
+                    AddTriIndex(getV(vertices[0]), ref ind);
+                    AddTriIndex(getV(vertices[3]), ref ind);
+                    AddTriIndex(getV(vertices[2]), ref ind);
                 }
                 else
                 {
-                    AddTriIndex(getV(vertices[0]), voxelSide, ref ind);
-                    AddTriIndex(getV(vertices[1]), voxelSide, ref ind);
-                    AddTriIndex(getV(vertices[2]), voxelSide, ref ind);
+                    AddTriIndex(getV(vertices[0]), ref ind);
+                    AddTriIndex(getV(vertices[1]), ref ind);
+                    AddTriIndex(getV(vertices[2]), ref ind);
                 
-                    AddTriIndex(getV(vertices[0]), voxelSide, ref ind);
-                    AddTriIndex(getV(vertices[2]), voxelSide, ref ind);
-                    AddTriIndex(getV(vertices[3]), voxelSide, ref ind);
+                    AddTriIndex(getV(vertices[0]), ref ind);
+                    AddTriIndex(getV(vertices[2]), ref ind);
+                    AddTriIndex(getV(vertices[3]), ref ind);
                 }
             }
 
             ind = 0;
+            delta = Scale / ((float)VoxelSide);
             // delta = Scale / (VoxelSide - 1f);
-            for (int x = 0; x < VoxelSide - 1; x++)
+            for (int x = 0; x < VoxelSide; x++)
             {
                 var coordsX = (Coords.x + x * delta);
-                for (int y = 0; y < VoxelSide - 1; y++)
+                for (int y = 0; y < VoxelSide; y++)
                 {
                     var coordsY = (Coords.y + y * delta);
-                    for (int z = 0; z < VoxelSide - 1; z++)
+                    for (int z = 0; z < VoxelSide; z++)
                     {
                         var coordsZ = (Coords.z + z * delta);
                         var localCoords = new int3(x, y, z);
-                        var vertIndex = MeshGen.CoordsToIndexNoPadding(localCoords, VoxelSide);
+                        var vertIndex = MeshGen.CoordsToIndexNoPadding(localCoords, v1);
                         var edgeCase = edgeMasks[vertIndex];
                         Debug.Log($"{localCoords} mask verts {edgeCase.VertexCount}");
                         if(edgeCase.VertexCount == 0)
