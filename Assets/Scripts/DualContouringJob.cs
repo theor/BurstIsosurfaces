@@ -149,8 +149,6 @@ namespace UnityTemplateProjects
             var v1 = VoxelSide + 1;
             var v3 = VoxelSide + 3;
 
-            int v = 0;
-            int ind = 0;
             var delta = Scale / ((float)VoxelSide);
                 
             // float3* edgePoints = stackalloc float3[12];
@@ -208,23 +206,33 @@ namespace UnityTemplateProjects
                         var vertIndex = MeshGen.CoordsToIndexNoPadding(localCoords, v1);
                         
                         edgeMasks[vertIndex] = edgeCase;
-
-                        outputVerts[v] = (float3) localCoords * delta + 0.5f*delta;
-                        outputNormals[v] = SampleNormal(localCoords);
-                        
-                        // Debug.Log($"pos {localCoords} vi {vertIndex} index {ind}");
-                        vertIndices[vertIndex] = ++ind;
-                        v++;
                     }
                 }
             }
 
+            int nextTriIndex = 0;
+            int nextVertexIndex = 0;
+
+            int outputIndexIndex = 0;
+            
             void AddTriIndex(int3 c)
             {
                 var coordsToIndex = MeshGen.CoordsToIndexNoPadding(c, v1);
                 // Debug.Log($"Add {c} vi {vertIndices[coordsToIndex]-1} at {ind}");
                 // indices in BASE 1
-                outputTris[ind++] = vertIndices[coordsToIndex] - 1;
+                
+                // vertex doesn't exist yet
+                if (vertIndices[coordsToIndex] == 0)
+                {
+                    outputVerts[nextVertexIndex] = (float3) c * delta + 0.5f*delta;
+                    outputNormals[nextVertexIndex] = new float3(1);// SampleNormal(c);
+                        
+                    // Debug.Log($"pos {localCoords} vi {vertIndex} index {ind}");
+                    vertIndices[coordsToIndex] = ++nextTriIndex;
+                    nextVertexIndex++;
+                }
+                
+                outputTris[outputIndexIndex++] = vertIndices[coordsToIndex] - 1;
             }
 
            void ProcessEdge(in byte* vertices, bool flipped, int x, int y, int z)
@@ -264,7 +272,7 @@ namespace UnityTemplateProjects
                 }
             }
 
-            ind = 0;
+            
             // delta = Scale / (VoxelSide - 1f);
             for (int x = 0; x < VoxelSide; x++)
             {
@@ -287,9 +295,9 @@ namespace UnityTemplateProjects
                 }
             }
 
-            IndexVertexCounts[0] = ind;
-            IndexVertexCounts[1] = v;
-            Debug.Log($"v {v} i {ind}");
+            IndexVertexCounts[0] = outputIndexIndex;
+            IndexVertexCounts[1] = nextVertexIndex;
+            Debug.Log($"v {nextVertexIndex} i {outputIndexIndex}");
             // for (int i = 0; i < v; i++)
             // {
             //     Debug.Log(outputVerts[i]);
@@ -303,7 +311,7 @@ namespace UnityTemplateProjects
             // {
             //     outputTris[j] = 0;
             // }
-            UnsafeUtility.MemClear((int*)outputTris.GetUnsafePtr()+ind, UnsafeUtility.SizeOf<int>()* (outputTris.Length - ind));
+            UnsafeUtility.MemClear((int*)outputTris.GetUnsafePtr()+outputIndexIndex, UnsafeUtility.SizeOf<int>()* (outputTris.Length - outputIndexIndex));
         }
     }
 }
