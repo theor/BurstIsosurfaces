@@ -1,3 +1,4 @@
+using JetBrains.Annotations;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
@@ -62,11 +63,13 @@ namespace UnityTemplateProjects
         }
         public unsafe void Execute()
         {
+            int voxelSide = VoxelSide;
             var outputVerts = OutputMesh.GetVertexData<float3>();
             var outputNormals = OutputMesh.GetVertexData<float3>(stream:1);
             var outputTris = OutputMesh.GetIndexData<int>();
 
             var vertIndices = new NativeArray<int>(outputVerts.Length, Allocator.Temp);
+            var edgeMasks = new NativeArray<ushort>(outputVerts.Length, Allocator.Temp);
             
             var v1 = VoxelSide + 1;
             var v3 = VoxelSide + 3;
@@ -122,15 +125,20 @@ namespace UnityTemplateProjects
                         ushort edgeMask = EdgeTable[cubeindex];
 
                         // Debug.Log($"{x} {y} {z} index {cubeindex:X} mask {edgeMask:X}");
-                        // if(edgeMask == 0)
-                        //     continue;
+                        if(edgeMask == 0)
+                            continue;
+                        
 
                         // alloc vertex and index
                         // index is in base 1 (so 0 is invalid)
                         var vertIndex = MeshGen.CoordsToIndexNoPadding(localCoords, VoxelSide);
-                        outputVerts[v] = (float3)localCoords * delta;
+                        
+                        edgeMasks[vertIndex] = edgeMask;
+                        
+                        outputVerts[v] = (float3)localCoords * delta + 0.5f*delta;
                         outputNormals[v] = new float3(0, 1, 0);
-                        Debug.Log($"pos {localCoords} vi {vertIndex} index {ind}");
+                        
+                        // Debug.Log($"pos {localCoords} vi {vertIndex} index {ind}");
                         vertIndices[vertIndex] = ++ind;
                         v++;
                     }
@@ -140,9 +148,83 @@ namespace UnityTemplateProjects
             void AddTriIndex(int3 c, int voxelSide, ref int ind)
             {
                 var coordsToIndex = MeshGen.CoordsToIndexNoPadding(c, voxelSide);
-                Debug.Log($"Add {c} vi {vertIndices[coordsToIndex]} at {ind}");
+                // Debug.Log($"Add {c} vi {vertIndices[coordsToIndex]} at {ind}");
                 // indices in BASE 1
                 outputTris[ind++] = vertIndices[coordsToIndex] - 1;
+            }
+
+            void AddEdgeQuad(int edgeIndex, int x, int y, int z)
+            {
+                switch (edgeIndex)
+                        {
+                            // case 3:
+                            //     // 3 over x/y
+                            //     AddTriIndex(new int3(x - 1, y, z), voxelSide, ref ind);
+                            //     AddTriIndex(new int3(x, y, z), voxelSide, ref ind);
+                            //     AddTriIndex(new int3(x, y - 1, z), voxelSide, ref ind);
+                            //
+                            //     AddTriIndex(new int3(x - 1, y, z), voxelSide, ref ind);
+                            //     AddTriIndex(new int3(x, y - 1, z), voxelSide, ref ind);
+                            //     AddTriIndex(new int3(x - 1, y - 1, z), voxelSide, ref ind);
+                            //     break;
+                            case 5:
+                                // 5 over x/y
+                                AddTriIndex(new int3(x, y, z), voxelSide, ref ind);
+                                AddTriIndex(new int3(x + 1, y, z), voxelSide, ref ind);
+                                AddTriIndex(new int3(x, y + 1, z), voxelSide, ref ind);
+
+                                AddTriIndex(new int3(x, y + 1, z), voxelSide, ref ind);
+                                AddTriIndex(new int3(x + 1, y, z), voxelSide, ref ind);
+                                AddTriIndex(new int3(x + 1, y + 1, z), voxelSide, ref ind);
+                                break;
+
+                            // case 0:
+                            //     // 6 over y/z
+                            //     AddTriIndex(new int3(x, y, z), voxelSide, ref ind);
+                            //     AddTriIndex(new int3(x, y, z - 1), voxelSide, ref ind);
+                            //     AddTriIndex(new int3(x, y - 1, z), voxelSide, ref ind);
+                            //
+                            //     AddTriIndex(new int3(x, y - 1, z), voxelSide, ref ind);
+                            //     AddTriIndex(new int3(x, y, z - 1), voxelSide, ref ind);
+                            //     AddTriIndex(new int3(x, y - 1, z - 1), voxelSide, ref ind);
+                            //     break;
+                            case 6:
+                                // 6 over y/z
+                                AddTriIndex(new int3(x, y, z + 1), voxelSide, ref ind);
+                                AddTriIndex(new int3(x, y, z), voxelSide, ref ind);
+                                AddTriIndex(new int3(x, y + 1, z), voxelSide, ref ind);
+
+                                AddTriIndex(new int3(x, y, z + 1), voxelSide, ref ind);
+                                AddTriIndex(new int3(x, y + 1, z), voxelSide, ref ind);
+                                AddTriIndex(new int3(x, y + 1, z + 1), voxelSide, ref ind);
+                                break;
+                            // case 8:
+                            //     // 10 over x/z : x,y,z x+1,y,z x+1,y,z+1 x,y,z+1
+                            //     AddTriIndex(new int3(x, y, z), voxelSide, ref ind);
+                            //     AddTriIndex(new int3(x - 1, y, z), voxelSide, ref ind);
+                            //     AddTriIndex(new int3(x, y, z - 1), voxelSide, ref ind);
+                            //
+                            //     AddTriIndex(new int3(x, y, z - 1), voxelSide, ref ind);
+                            //     AddTriIndex(new int3(x - 1, y, z), voxelSide, ref ind);
+                            //     AddTriIndex(new int3(x - 1, y, z - 1), voxelSide, ref ind);
+                            //     break;
+                            case 10:
+                                // 10 over x/z : x,y,z x+1,y,z x+1,y,z+1 x,y,z+1
+                                AddTriIndex(new int3(x + 1, y, z), voxelSide, ref ind);
+                                AddTriIndex(new int3(x, y, z), voxelSide, ref ind);
+                                AddTriIndex(new int3(x, y, z + 1), voxelSide, ref ind);
+
+                                AddTriIndex(new int3(x + 1, y, z), voxelSide, ref ind);
+                                AddTriIndex(new int3(x, y, z + 1), voxelSide, ref ind);
+                                AddTriIndex(new int3(x + 1, y, z + 1), voxelSide, ref ind);
+                                break;
+                        }
+            }
+
+            void ProcessEdge(ushort edgeMask, int edgeIndex, int x, int y, int z)
+            {
+                if((edgeMask & (1 << edgeIndex)) != 0)
+                    AddEdgeQuad(edgeIndex, x, y, z);
             }
 
             ind = 0;
@@ -156,15 +238,20 @@ namespace UnityTemplateProjects
                     for (int z = 0; z < VoxelSide - 1; z++)
                     {
                         var coordsZ = (Coords.z + z * delta);
+                        var localCoords = new int3(x, y, z);
+                        var vertIndex = MeshGen.CoordsToIndexNoPadding(localCoords, VoxelSide);
+                        var edgeMask = edgeMasks[vertIndex];
+                        if(edgeMask == 0)
+                            continue;
+                        // Debug.Log($"{localCoords} mask {edgeMask:X}");
+                        // ProcessEdge(edgeMask, 0, x, y, z);
+                        // ProcessEdge(edgeMask, 3, x, y, z);
+                        // ProcessEdge(edgeMask, 8, x, y, z);
+                        ProcessEdge(edgeMask, 5, x, y, z);
+                        ProcessEdge(edgeMask, 6, x, y, z);
+                        ProcessEdge(edgeMask, 10, x, y, z);
                         // edges 5, 6, 10
-                        // 10 : x,y,z x+1,y,z x+1,y,z+1 x,y,z+1
-                        AddTriIndex(new int3(x + 1, y, z), VoxelSide, ref ind);
-                        AddTriIndex(new int3(x, y, z), VoxelSide, ref ind);
-                        AddTriIndex(new int3(x, y, z + 1), VoxelSide, ref ind);
-                        
-                        AddTriIndex(new int3(x + 1, y, z), VoxelSide, ref ind);
-                        AddTriIndex(new int3(x, y, z + 1), VoxelSide, ref ind);
-                        AddTriIndex(new int3(x + 1, y, z + 1), VoxelSide, ref ind);
+
 
                     }
                 }
@@ -244,14 +331,14 @@ namespace UnityTemplateProjects
             IndexVertexCounts[0] = ind;
             IndexVertexCounts[1] = v;
             Debug.Log($"v {v} i {ind}");
-            for (int i = 0; i < v; i++)
-            {
-                Debug.Log(outputVerts[i]);
-            }
-            for (int i = 0; i < ind; i++)
-            {
-                Debug.Log(outputTris[i]);
-            }
+            // for (int i = 0; i < v; i++)
+            // {
+            //     Debug.Log(outputVerts[i]);
+            // }
+            // for (int i = 0; i < ind; i++)
+            // {
+            //     Debug.Log(outputTris[i]);
+            // }
             
             // for (int j = i; j < outputTris.Length; j++)
             // {

@@ -116,7 +116,7 @@ namespace UnityTemplateProjects
                 var maxTriCount = maxVertexCount * 12;
                 maxIndexCount = maxTriCount * 3;
             }
-            Assert.IsTrue(maxIndexCount < ushort.MaxValue);
+            // Assert.IsTrue(maxIndexCount < ushort.MaxValue);
             OutputMeshData[0].SetIndexBufferParams(maxIndexCount, IndexFormat.UInt32);
             OutputMeshData[0].SetVertexBufferParams(maxVertexCount,
                 new VertexAttributeDescriptor(VertexAttribute.Position),
