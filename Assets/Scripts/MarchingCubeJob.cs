@@ -103,13 +103,8 @@ namespace UnityTemplateProjects
                         MeshGen.GetCornerCoords(localCoords, v3, out var corners);
 
                         MeshGen.OctFloat voxelDensities;
-                        MeshGen.OctFloat voxelDensitiesBool;
-                        for (int j = 0; j < 8; j++)
-                        {
-                            voxelDensities[j] = Densities[corners[j]];
-                            voxelDensitiesBool[j] = voxelDensities[j] < Isolevel ? -1 : 1;
-                        }
-                            
+                        for (int j = 0; j < 8; j++) voxelDensities[j] = Densities[corners[j]];
+
                         // Debug.Log($"voxel {coords} {localCoords} = {coords+localCoords}\ncorners {corners}\ndensities {voxelDensities}\nbool {voxelDensitiesBool}");
                         byte cubeindex = 0;
                         if (voxelDensities[0] < Isolevel) cubeindex |= 1;
@@ -157,8 +152,8 @@ namespace UnityTemplateProjects
                                 var nb = SampleNormal(b);
                                 normals[i] =
                                     math.normalize(na * (1-offset) + nb * (offset));
-                                var t1 = new int3(1,0,0);
-                                var t2 = new int3(1,0,1);
+                                // var t1 = new int3(1,0,0);
+                                // var t2 = new int3(1,0,1);
                                 // if(a.Equals(t1) && b.Equals(t2) || a.Equals(t2) && b.Equals(t1))
                                     // Debug.Log($"{a} {na:F2}\n{b} {nb:F2}\n{normals[i]:F2}\n{edgePoints[i]:F2}");
                                 // normals[i] = new half4(new float4( math.normalize(SampleNormal(Coords + edgePoints[i])), 1));

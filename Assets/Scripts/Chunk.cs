@@ -146,7 +146,9 @@ namespace UnityTemplateProjects
 
                 var job = new DualContouringJob()
                 {
+                    EvalGraph = _meshGen.DensityFormulaEvaluator,
                     Densities = _densities,
+                    EdgeTable = _meshGen.EdgeTable,
                     Scale = Scale,
                     VoxelSide = _meshGen.VoxelSide,
                     OutputMesh = this.OutputMeshData[0],
