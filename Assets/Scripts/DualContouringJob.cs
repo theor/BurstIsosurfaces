@@ -337,16 +337,21 @@ namespace UnityTemplateProjects
                         
                             var coordsToIndex = MeshGen.CoordsToIndexNoPadding(localCoords + new int3(0,1,0), v1);
                             var index = vertIndices[coordsToIndex] - 1;
-                            Debug.Log($"{localCoords} {coordsToIndex} m {edgeMask:X} {index} offset {mean}");
-                            Assert.IsTrue(index >= 0, $"{localCoords} index {coordsToIndex}");
-                            outputVerts[index] += mean - 0.5f*delta;
+                            // Debug.Log($"{localCoords} {coordsToIndex} m {Convert.ToString(edgeMask, 2)} {index} offset {mean}");
+                            if (index >= 0)
+                            {
+                                // Assert.IsTrue(index >= 0, $"{localCoords} index {coordsToIndex}");
+                                outputVerts[index] += mean - 0.5f * delta;
+                            }
+                            // else
+                                // Debug.LogError($"No index for {localCoords} at {coordsToIndex} {Convert.ToString(edgeMask, 2)}");
                         }
                     }
                 }
 
             IndexVertexCounts[0] = outputIndexIndex;
             IndexVertexCounts[1] = nextVertexIndex;
-            Debug.Log($"v {nextVertexIndex} i {outputIndexIndex}");
+            Debug.Log($"{Coords} v {nextVertexIndex} i {outputIndexIndex}");
             // for (int i = 0; i < v; i++)
             // {
             //     Debug.Log(outputVerts[i]);

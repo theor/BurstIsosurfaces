@@ -5,6 +5,7 @@ using Unity.Collections;
 using Unity.Jobs;
 using Unity.Mathematics;
 using UnityEngine;
+using UnityEngine.Assertions;
 
 namespace UnityTemplateProjects
 {
@@ -154,6 +155,14 @@ namespace UnityTemplateProjects
                 ((index % (v3 * v3)) / v3) - 1
             );
         }
+        public static int3 IndexToCoordsNoPadding(int index, int v3)
+        {
+            return new int3(
+                (index % v3),
+                index / (v3 * v3),
+                ((index % (v3 * v3)) / v3)
+            );
+        }
 
         public static int CoordsToIndex(int3 coords, int v1)
         {
@@ -161,7 +170,11 @@ namespace UnityTemplateProjects
         }
         public static int CoordsToIndexNoPadding(int3 coords, int v1)
         {
-            return coords.x + coords.y * v1 * v1 + coords.z * v1;
+            var coordsToIndexNoPadding = coords.x + coords.y * v1 * v1 + coords.z * v1;
+            #if true
+            Assert.AreEqual(coords, IndexToCoordsNoPadding(coordsToIndexNoPadding, v1));
+            #endif
+            return coordsToIndexNoPadding;
         }
 
 
