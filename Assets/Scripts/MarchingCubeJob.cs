@@ -194,6 +194,7 @@ namespace UnityTemplateProjects
 
             IndexVertexCounts[0] = ind;
             IndexVertexCounts[1] = v;
+            Debug.Log($"{Coords} v {v} i {ind}");
             // for (int j = i; j < outputTris.Length; j++)
             // {
             //     outputTris[j] = 0;

@@ -343,8 +343,8 @@ namespace UnityTemplateProjects
                                 // Assert.IsTrue(index >= 0, $"{localCoords} index {coordsToIndex}");
                                 outputVerts[index] += mean - 0.5f * delta;
                             }
-                            // else
-                                // Debug.LogError($"No index for {localCoords} at {coordsToIndex} {Convert.ToString(edgeMask, 2)}");
+                            else
+                                Debug.LogError($"No index for {localCoords} at {coordsToIndex} {Convert.ToString(edgeMask, 2)}");
                         }
                     }
                 }
