@@ -156,6 +156,7 @@ namespace UnityTemplateProjects
                     IndexVertexCounts = this._indexVertexCounts,
                     EdgeConnection = _meshGen.EdgeConnection,
                     EdgeDirection = _meshGen.EdgeDirection,
+                    Smooth = _meshGen.Smooth,
 
                 };
                 this._handle = job.Schedule(h);

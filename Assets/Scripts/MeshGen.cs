@@ -53,6 +53,7 @@ namespace UnityTemplateProjects
         public EvalGraph DensityFormulaEvaluator;
 
         public Algorithm Algorithm;
+        public bool Smooth;
 
 
         private void Reset()

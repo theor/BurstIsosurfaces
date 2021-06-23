@@ -53,6 +53,12 @@ namespace UnityTemplateProjects
                 _meshGen.RequestChunk(_chunks[i], _chunks[i].Coords, Scale, false);
             }
         }
+
+        public void ForceRegen()
+        {
+            _meshGen.DensityFormula.SetDirty();
+            // _meshGen.DensityFormula.LiveEdit(ref _meshGen.DensityFormulaEvaluator, OnFormulaChanged);
+        }
 #endif
 
         private void Update()

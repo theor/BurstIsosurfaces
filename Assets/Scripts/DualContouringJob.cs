@@ -14,7 +14,7 @@ namespace UnityTemplateProjects
     [BurstCompile]
     public struct DualContouringJob : IJob
     {
-        
+        public bool Smooth;
         [ReadOnly]
         public EvalGraph EvalGraph;
         
@@ -40,6 +40,7 @@ namespace UnityTemplateProjects
         {
             public byte VertexCount;
             public byte Flipped;
+            public byte Mask;
             public unsafe fixed byte Vertices[12];
 
             public EdgeCase(byte vertexCount) : this()
@@ -96,6 +97,13 @@ namespace UnityTemplateProjects
                 var edgeCase = a[(~i) & 0b00001111];
                 edgeCase.Flipped = 1;
                 a[i] = edgeCase;
+            }
+
+            for (int i = 0; i <= 0b1111; i++)
+            {
+                var c = a[i];
+                c.Mask = (byte) i;
+                a[i] = c;
             }
 
             // for (int i = 0; i < 16; i++)
@@ -275,69 +283,66 @@ namespace UnityTemplateProjects
             }
 
             // float3* edgePoints = stackalloc float3[12];
-            for (int x = 0; x < v1; x++)
-            {
-                for (int y = 0; y < v1; y++)
+            if(Smooth)
+                for (int x = 0; x < voxelSide; x++)
                 {
-                    for (int z = 0; z < v1; z++)
+                    for (int y = 0; y < voxelSide; y++)
                     {
-                        var localCoords = new int3(x, y, z);
-                        
-                        float3 mean = float3.zero;
-                        int meanCount = 0;
-
-                        MeshGen.GetCornerCoords(localCoords, v3, out var corners);
-
-                        MeshGen.OctFloat voxelDensities;
-                        for (int j = 0; j < 8; j++) voxelDensities[j] = Densities[corners[j]];
-
-                        var edgeMask = GetEdgeMask(voxelDensities);
-                        if(edgeMask == 0)
-                            continue;
-                        for (int i = 0; i < 12; i++)
+                        for (int z = 0; z < voxelSide; z++)
                         {
-                            //if there is an intersection on this edge
-                            if ((edgeMask & (1 << i)) != 0)
+                            var localCoords = new int3(x, y, z);
+                        
+                            float3 mean = float3.zero;
+                            int meanCount = 0;
+
+                            MeshGen.GetCornerCoords(localCoords, v3, out var corners);
+
+                            MeshGen.OctFloat voxelDensities;
+                            for (int j = 0; j < 8; j++) voxelDensities[j] = Densities[corners[j]];
+
+                            var edgeMask = GetEdgeMask(voxelDensities);
+                            if(edgeMask == 0)
+                                continue;
+                            for (int i = 0; i < 8; i++)
                             {
-                                meanCount++;
-                                Marching.byte2 conn = EdgeConnection[i];
-                                var offset =
-                                        // 0.5f
-                                        (Isolevel - voxelDensities[conn.x]) /
-                                        (voxelDensities[conn.y] - voxelDensities[conn.x])
-                                    ;
+                                //if there is an intersection on this edge
+                                if ((edgeMask & (1 << i)) != 0)
+                                {
+                                    meanCount++;
+                                    Marching.byte2 conn = EdgeConnection[i];
+                                    var offset =
+                                            // 0.5f
+                                            (Isolevel - voxelDensities[conn.x]) /
+                                            (voxelDensities[conn.y] - voxelDensities[conn.x])
+                                        ;
 
-                                // compute the two normals at x,y,z and x',y',z'
-                                // 'coords are xyz+edgeDirection as int
-                                // n = normalize(n1+n2)
-                                // n1, n2: gradient on 3 axis
-                                // cheap gradient if the density grid has a padding of 1 
+                                    // compute the two normals at x,y,z and x',y',z'
+                                    // 'coords are xyz+edgeDirection as int
+                                    // n = normalize(n1+n2)
+                                    // n1, n2: gradient on 3 axis
+                                    // cheap gradient if the density grid has a padding of 1 
 
 
-                                var edgePoint = new float3(
-                                    (x + vertexOffsets[conn.x].x) * delta + offset * delta * EdgeDirection[i].x,
-                                    (y + vertexOffsets[conn.x].y) * delta + offset * delta * EdgeDirection[i].y,
-                                    (z + vertexOffsets[conn.x].z) * delta + offset * delta * EdgeDirection[i].z
-                                );
-                                mean += edgePoint;
-                                // edgePoints[i]
+                                    var edgePoint = new float3(
+                                        (x + vertexOffsets[conn.x].x) * delta + offset * delta * EdgeDirection[i].x,
+                                        (y + vertexOffsets[conn.x].y) * delta + offset * delta * EdgeDirection[i].y,
+                                        (z + vertexOffsets[conn.x].z) * delta + offset * delta * EdgeDirection[i].z
+                                    );
+                                    mean += edgePoint;
+                                    // edgePoints[i]
+                                }
                             }
-                        }
 
-                        mean /= meanCount;
+                            mean /= meanCount;
                         
-                        var coordsToIndex = MeshGen.CoordsToIndexNoPadding(localCoords, v1);
-                        var index = vertIndices[coordsToIndex] - 1;
-                        Debug.Log($"{localCoords} {coordsToIndex} {index}");
-                        if (index >= 0)
-                        {
+                            var coordsToIndex = MeshGen.CoordsToIndexNoPadding(localCoords + new int3(0,1,0), v1);
+                            var index = vertIndices[coordsToIndex] - 1;
+                            Debug.Log($"{localCoords} {coordsToIndex} m {edgeMask:X} {index}");
                             Assert.IsTrue(index >= 0);
                             outputVerts[index] = mean;
                         }
-
                     }
                 }
-            }
 
             IndexVertexCounts[0] = outputIndexIndex;
             IndexVertexCounts[1] = nextVertexIndex;
@@ -377,7 +382,7 @@ namespace UnityTemplateProjects
                 outputVerts[nextVertexIndex] = pos;
                 outputNormals[nextVertexIndex] = -SampleNormal(ref evalState, Coords + pos - 0.5f * delta);
 
-                // Debug.Log($"pos {localCoords} vi {vertIndex} index {ind}");
+                Debug.Log($"create vertex at {c} vi {nextVertexIndex} index {nextVertexIndex}");
                 vertIndices[coordsToIndex] = nextVertexIndex+1;
                 nextVertexIndex++;
             }
@@ -407,7 +412,7 @@ namespace UnityTemplateProjects
                     6 => new int3(x + 1, y + 1, z + 1),
                     7 => new int3(x, y + 1, z + 1),
                     _ => throw new System.NotImplementedException(),
-                };
+                };// - new int3(1);
 
             if (flipped)
             {

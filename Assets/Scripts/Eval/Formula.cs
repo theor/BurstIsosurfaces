@@ -24,7 +24,7 @@ namespace UnityTemplateProjects
         public List<FormulaParam> NamedValues;
         public List<string> Params;
 
-        internal void SetDirty() => _dirty = true;
+        public void SetDirty() => _dirty = true;
 
         internal string _error;
         private int _lastFormulaHashCode;
