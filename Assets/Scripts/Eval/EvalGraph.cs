@@ -80,6 +80,7 @@ namespace UnityTemplateProjects
         CNoise_1,
         SNoise_1,
         SRDNoise_1,
+        Fbm_1,
         Fbm_4,
         Dist_2,
         SqDist_2,

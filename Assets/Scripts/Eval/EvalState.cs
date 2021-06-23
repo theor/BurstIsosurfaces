@@ -97,6 +97,9 @@ namespace UnityTemplateProjects
                         case Op.SqDist_2:
                             Push(math.distancesq(Pop(),Pop()));
                             break;
+                        case Op.Fbm_1:
+                            Push(Fbm.fbm(Pop(),1,5,0.4f));
+                            break;
                         case Op.Fbm_4:
                             Push(Fbm.fbm(Pop(),Pop().x,(int) Pop().x,Pop().x));
                             break;

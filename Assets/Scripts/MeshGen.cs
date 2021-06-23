@@ -205,7 +205,8 @@ namespace UnityTemplateProjects
 
         public void ClearQueue()
         {
-            _queue.Clear();
+            while (_queue.Count > 0)
+                _queue.Dequeue().InQueue = false;
             _currentHandle.Complete();
         }
     }
