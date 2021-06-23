@@ -23,7 +23,7 @@ namespace UnityTemplateProjects
         public int Scale;
         public int VoxelSide;
         public float Isolevel;
-        [WriteOnly]
+        // [WriteOnly]
         public NativeArray<int> IndexVertexCounts;
 
         [ReadOnly]
@@ -284,11 +284,11 @@ namespace UnityTemplateProjects
 
             // float3* edgePoints = stackalloc float3[12];
             if(Smooth)
-                for (int x = 0; x < voxelSide; x++)
+                for (int x = 0; x <= voxelSide; x++)
                 {
-                    for (int y = 0; y < voxelSide; y++)
+                    for (int y = 0; y <= voxelSide; y++)
                     {
-                        for (int z = 0; z < voxelSide; z++)
+                        for (int z = 0; z <= voxelSide; z++)
                         {
                             var localCoords = new int3(x, y, z);
                         
@@ -303,7 +303,7 @@ namespace UnityTemplateProjects
                             var edgeMask = GetEdgeMask(voxelDensities);
                             if(edgeMask == 0)
                                 continue;
-                            for (int i = 0; i < 8; i++)
+                            for (int i = 0; i < 12; i++)
                             {
                                 //if there is an intersection on this edge
                                 if ((edgeMask & (1 << i)) != 0)
@@ -324,22 +324,22 @@ namespace UnityTemplateProjects
 
 
                                     var edgePoint = new float3(
-                                        (x + vertexOffsets[conn.x].x) * delta + offset * delta * EdgeDirection[i].x,
-                                        (y + vertexOffsets[conn.x].y) * delta + offset * delta * EdgeDirection[i].y,
-                                        (z + vertexOffsets[conn.x].z) * delta + offset * delta * EdgeDirection[i].z
+                                        (vertexOffsets[conn.x].x) * delta + offset * delta * EdgeDirection[i].x,
+                                        (vertexOffsets[conn.x].y) * delta + offset * delta * EdgeDirection[i].y,
+                                        (vertexOffsets[conn.x].z) * delta + offset * delta * EdgeDirection[i].z
                                     );
-                                    mean += edgePoint;
+                                    mean += math.clamp(edgePoint, float3.zero, 1);
                                     // edgePoints[i]
                                 }
                             }
-
+// if(meanCount == 0)
                             mean /= meanCount;
                         
                             var coordsToIndex = MeshGen.CoordsToIndexNoPadding(localCoords + new int3(0,1,0), v1);
                             var index = vertIndices[coordsToIndex] - 1;
-                            Debug.Log($"{localCoords} {coordsToIndex} m {edgeMask:X} {index}");
-                            Assert.IsTrue(index >= 0);
-                            outputVerts[index] = mean;
+                            Debug.Log($"{localCoords} {coordsToIndex} m {edgeMask:X} {index} offset {mean}");
+                            Assert.IsTrue(index >= 0, $"{localCoords} index {coordsToIndex}");
+                            outputVerts[index] += mean - 0.5f*delta;
                         }
                     }
                 }
@@ -378,11 +378,11 @@ namespace UnityTemplateProjects
             // vertex doesn't exist yet
             if (vertIndices[coordsToIndex] == 0)
             {
-                var pos = (float3) c * delta + 0.5f * delta;
+                var pos = (float3) c * delta + new float3(.5f,-.5f,.5f) * delta;
                 outputVerts[nextVertexIndex] = pos;
-                outputNormals[nextVertexIndex] = -SampleNormal(ref evalState, Coords + pos - 0.5f * delta);
+                outputNormals[nextVertexIndex] = SampleNormal(ref evalState, Coords + pos - 0.5f * delta);
 
-                Debug.Log($"create vertex at {c} vi {nextVertexIndex} index {nextVertexIndex}");
+                Debug.Log($"create vertex at {c} vi {nextVertexIndex} index {coordsToIndex}");
                 vertIndices[coordsToIndex] = nextVertexIndex+1;
                 nextVertexIndex++;
             }
@@ -414,7 +414,7 @@ namespace UnityTemplateProjects
                     _ => throw new System.NotImplementedException(),
                 };// - new int3(1);
 
-            if (flipped)
+            if (!flipped)
             {
                 AddTriIndex(getV(vertices[0]), v1, ref vertIndices, delta, ref outputVerts, ref nextVertexIndex, ref outputNormals, ref evalState,  ref outputTris, ref outputIndexIndex);
                 AddTriIndex(getV(vertices[2]), v1, ref vertIndices, delta, ref outputVerts, ref nextVertexIndex, ref outputNormals, ref evalState,  ref outputTris, ref outputIndexIndex);
