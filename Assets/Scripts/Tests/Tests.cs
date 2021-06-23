@@ -45,6 +45,8 @@ namespace ShuntingYard
         [TestCase("tan(1)", "tan(1)", 1.55740774f)]
         [TestCase("tan(tan(1))", "tan(tan(1))", 74.6860046f)]
         [TestCase("tan(tan(11%10))", "tan(tan((11 % 10)))", 74.6860046f)]
+        [TestCase("dist(a, 0.5) - 0.3 / 0.01*snoise(a + fbm(a)) ", "(dist($a, 0.5) - ((0.3 / 0.01) * snoise(($a + fbm($a)))))", null)]
+        [TestCase("1*abs(a + 2) ", "(1 * abs(($a + 2)))", 9f)]
         public void Parse(string input, string expectedFormat, float? result = null)
         {
             INode parsed = Parser.Parse(input,  out var err);

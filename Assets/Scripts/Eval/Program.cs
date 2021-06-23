@@ -415,6 +415,7 @@ namespace ShuntingYard
                         else // function call
                         {
                             r.ReadToken(); // skip (
+                            opStack.Push(Ops[OpType.LeftParens]);
                             List<INode> args = new List<INode>();
 
                             while (true)
@@ -424,6 +425,7 @@ namespace ShuntingYard
                                 args.Add(arg);
                                 if (r.CurrentTokenType == Token.RightParens)
                                 {
+                                    opStack.Pop();
                                     break;
                                 }
                                 r.ReadToken();
