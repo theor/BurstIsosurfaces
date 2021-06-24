@@ -86,12 +86,12 @@ namespace UnityTemplateProjects
             var a = new NativeArray<EdgeCase>(16, allocator);
             a[0b0000] = new EdgeCase(0);
             a[0b0001] = new EdgeCase(4).Quad0(0,1,5,4);
-            a[0b0010] = new EdgeCase(4).Quad0(4,5,6,7);
-            a[0b0011] = new EdgeCase(8).Quad0(0,1,5,4).Quad1(4,5,6,7);
+            a[0b0010] = new EdgeCase(4).Quad0(3,2,1,0);
+            a[0b0011] = new EdgeCase(8).Quad0(0,1,5,4).Quad1(3,2,1,0);
             a[0b0100] = new EdgeCase(4).Quad0(0,4,7,3);
             a[0b0101] = new EdgeCase(8).Quad0(0,1,5,4).Quad1(7,3,0,4);
-            a[0b0110] = new EdgeCase(8).Quad0(4,5,6,7).Quad1(7,3,0,4);
-            a[0b0111] = new EdgeCase(12).Quad0(0,1,5,4).Quad1(4,5,6,7).Quad2(7,3,0,4);
+            a[0b0110] = new EdgeCase(8).Quad0(3,2,1,0).Quad1(7,3,0,4);
+            a[0b0111] = new EdgeCase(12).Quad0(0,1,5,4).Quad1(3,2,1,0).Quad2(7,3,0,4);
             for (int i = 0b1000; i <= 0b1111; i++)
             {
                 var edgeCase = a[(~i) & 0b00001111];
@@ -224,10 +224,10 @@ namespace UnityTemplateProjects
                         // Debug.Log($"voxel {coords} {localCoords} = {coords+localCoords}\ncorners {corners}\ndensities {voxelDensities}\nbool {voxelDensitiesBool}");
                         
                         byte cubeindex = 0;
-                        if (voxelDensities[1] < Isolevel) cubeindex |= 1;
-                        if (voxelDensities[6] < Isolevel) cubeindex |= 2;
-                        if (voxelDensities[3] < Isolevel) cubeindex |= 4;
-                        if (voxelDensities[2] < Isolevel) cubeindex |= 8;
+                        if (voxelDensities[5] < Isolevel) cubeindex |= 1;
+                        if (voxelDensities[2] < Isolevel) cubeindex |= 2;
+                        if (voxelDensities[7] < Isolevel) cubeindex |= 4;
+                        if (voxelDensities[6] < Isolevel) cubeindex |= 8;
 
                         // cubeindex = 0b0111;
                         // cubeindex = 0b1000;
@@ -239,7 +239,7 @@ namespace UnityTemplateProjects
 
                         // alloc vertex and index
                         // index is in base 1 (so 0 is invalid)
-                        var vertIndex = MeshGen.CoordsToIndexNoPadding(localCoords, v1);
+                        var vertIndex = MeshGen.CoordsToIndex(localCoords, v1);
                         
                         edgeMasks[vertIndex] = edgeCase;
                     }
@@ -259,7 +259,7 @@ namespace UnityTemplateProjects
                     for (int z = 0; z < VoxelSide; z++)
                     {
                         var localCoords = new int3(x, y, z);
-                        var vertIndex = MeshGen.CoordsToIndexNoPadding(localCoords, v1);
+                        var vertIndex = MeshGen.CoordsToIndex(localCoords, v1);
                         var edgeCase = edgeMasks[vertIndex];
                         // Debug.Log($"{localCoords} mask verts {edgeCase.VertexCount}");
                         if(edgeCase.VertexCount == 0)
@@ -296,6 +296,8 @@ namespace UnityTemplateProjects
                             int meanCount = 0;
 
                             MeshGen.GetCornerCoords(localCoords, v3, out var corners);
+
+                            // Debug.Log($"Smooth from {localCoords}: {string.Join(",", corners.AsArray().Select(c => MeshGen.IndexToCoords(c, v3)))}");
 
                             MeshGen.OctFloat voxelDensities;
                             for (int j = 0; j < 8; j++) voxelDensities[j] = Densities[corners[j]];
@@ -335,7 +337,7 @@ namespace UnityTemplateProjects
 // if(meanCount == 0)
                             mean /= meanCount;
                         
-                            var coordsToIndex = MeshGen.CoordsToIndexNoPadding(localCoords + new int3(0,1,0), v1);
+                            var coordsToIndex = MeshGen.CoordsToIndex(localCoords , v1);
                             var index = vertIndices[coordsToIndex] - 1;
                             // Debug.Log($"{localCoords} {coordsToIndex} m {Convert.ToString(edgeMask, 2)} {index} offset {mean}");
                             if (index >= 0)
@@ -343,15 +345,15 @@ namespace UnityTemplateProjects
                                 // Assert.IsTrue(index >= 0, $"{localCoords} index {coordsToIndex}");
                                 outputVerts[index] += mean - 0.5f * delta;
                             }
-                            else
-                                Debug.LogError($"No index for {localCoords} at {coordsToIndex} {Convert.ToString(edgeMask, 2)}");
+                            // else
+                                // Debug.LogError($"No index for {localCoords} at {coordsToIndex} {Convert.ToString(edgeMask, 2)}");
                         }
                     }
                 }
 
             IndexVertexCounts[0] = outputIndexIndex;
             IndexVertexCounts[1] = nextVertexIndex;
-            Debug.Log($"{Coords} v {nextVertexIndex} i {outputIndexIndex}");
+            // Debug.Log($"{Coords} v {nextVertexIndex} i {outputIndexIndex}");
             // for (int i = 0; i < v; i++)
             // {
             //     Debug.Log(outputVerts[i]);
@@ -376,7 +378,7 @@ namespace UnityTemplateProjects
             ref NativeArray<int> outputTris,
             ref int outputIndexIndex)
         {
-            var coordsToIndex = MeshGen.CoordsToIndexNoPadding(c, v1);
+            var coordsToIndex = MeshGen.CoordsToIndex(c, v1);
             // Debug.Log($"Add {c} vi {vertIndices[coordsToIndex]-1} at {ind}");
             // indices in BASE 1
 
@@ -387,7 +389,7 @@ namespace UnityTemplateProjects
                 outputVerts[nextVertexIndex] = pos;
                 outputNormals[nextVertexIndex] = SampleNormal(ref evalState, Coords + pos - 0.5f * delta);
 
-                Debug.Log($"create vertex at {c} vi {nextVertexIndex} index {coordsToIndex}");
+                // Debug.Log($"create vertex at {c} vi {nextVertexIndex} index {coordsToIndex}");
                 vertIndices[coordsToIndex] = nextVertexIndex+1;
                 nextVertexIndex++;
             }
@@ -416,6 +418,14 @@ namespace UnityTemplateProjects
                     5 => new int3(x + 1, y + 1, z),
                     6 => new int3(x + 1, y + 1, z + 1),
                     7 => new int3(x, y + 1, z + 1),
+                    // 0 => new int3(x -1, y-1, z-1),
+                    // 1 => new int3(x , y-1, z-1),
+                    // 2 => new int3(x , y-1, z ),
+                    // 3 => new int3(x-1, y-1, z ),
+                    // 4 => new int3(x-1, y , z-1),
+                    // 5 => new int3(x , y , z-1),
+                    // 6 => new int3(x , y , z ),
+                    // 7 => new int3(x, y , z ),
                     _ => throw new System.NotImplementedException(),
                 };// - new int3(1);
 

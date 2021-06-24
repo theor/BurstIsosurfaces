@@ -20,6 +20,21 @@ namespace UnityTemplateProjects
             {
                 return $"{Value[0]} {Value[1]} {Value[2]} {Value[3]} {Value[4]} {Value[5]} {Value[6]} {Value[7]}";
             }
+            
+            public int[] AsArray()
+            {
+                return new[]
+                {
+                    Value[0],
+                    Value[1],
+                    Value[2],
+                    Value[3],
+                    Value[4],
+                    Value[5],
+                    Value[6],
+                    Value[7],
+                };
+            }
         }
         
         public unsafe struct OctFloat
@@ -139,6 +154,7 @@ namespace UnityTemplateProjects
             coords.Value[7] = coords.Value[3] + v2*v2; // +y
             return true;
         }
+
 
 
         /// <summary>
