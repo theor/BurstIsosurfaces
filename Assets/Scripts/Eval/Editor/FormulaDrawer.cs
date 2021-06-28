@@ -56,7 +56,7 @@ namespace Eval.Editor
                     property.FindPropertyRelative(nameof(Formula.Input)), label); 
                 if (EditorGUI.EndChangeCheck())
                 {
-                    Debug.Log("CHANGE");
+                    // Debug.Log("CHANGE");
                     formulaObject.ApplyModifiedProperties();
                     UpdateInstance();
                     formulaObject.Update();
@@ -75,16 +75,19 @@ namespace Eval.Editor
 
                 var namedValues = property.FindPropertyRelative(nameof(Formula.NamedValues));
                 bool enabled = GUI.enabled;
-                GUI.enabled = false;
+                // GUI.enabled = false;
                 var paramsProp = property.FindPropertyRelative(nameof(Formula.Params));
                 for (int i = 0; i < paramsProp.arraySize; i++)
                 {
                     var elt = paramsProp.GetArrayElementAtIndex(i);
                     rect.y += EditorGUIUtility.singleLineHeight;
                     EditorGUI.SelectableLabel(rect, elt.stringValue);
+                    var r2 = rect;
+                    r2.x += EditorGUIUtility.fieldWidth;
+                    EditorGUI.LabelField(r2, "Parameter");
                 }
                 
-                GUI.enabled = enabled;
+                // GUI.enabled = enabled;
                 
                 
                 EditorGUI.BeginChangeCheck();

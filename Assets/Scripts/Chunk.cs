@@ -123,43 +123,84 @@ namespace UnityTemplateProjects
                 new VertexAttributeDescriptor(VertexAttribute.Position),
                 new VertexAttributeDescriptor(VertexAttribute.Normal, stream: 1));
 
-            if (_meshGen.Algorithm == Algorithm.MarchingCube)
+            switch (_meshGen.Algorithm)
             {
-                MarchingCubeJob job = new MarchingCubeJob
+                case Algorithm.MarchingCube:
                 {
-                    Densities = _densities,
-                    Scale = Scale,
-                    VoxelSide = _meshGen.VoxelSide,
-                    OutputMesh = this.OutputMeshData[0],
-                    Coords = Coords,
-                    IndexVertexCounts = this._indexVertexCounts,
-                    EdgeTable = _meshGen.EdgeTable,
-                    TriTable = _meshGen.TriTable,
-                    EdgeConnection = _meshGen.EdgeConnection,
-                    EdgeDirection = _meshGen.EdgeDirection,
+                    MarchingCubeJob job = new MarchingCubeJob
+                    {
+                        Densities = _densities,
+                        Scale = Scale,
+                        VoxelSide = _meshGen.VoxelSide,
+                        OutputMesh = this.OutputMeshData[0],
+                        Coords = Coords,
+                        IndexVertexCounts = this._indexVertexCounts,
+                        EdgeTable = _meshGen.EdgeTable,
+                        TriTable = _meshGen.TriTable,
+                        EdgeConnection = _meshGen.EdgeConnection,
+                        EdgeDirection = _meshGen.EdgeDirection,
                     
-                };
-                this._handle = job.Schedule(h);
-            }
-            else
-            {
-
-                var job = new DualContouringJob()
+                    };
+                    this._handle = job.Schedule(h);
+                    break;
+                }
+                case Algorithm.DualContouring:
                 {
-                    EvalGraph = _meshGen.DensityFormulaEvaluator,
-                    Densities = _densities,
-                    EdgeTable = _meshGen.EdgeTable,
-                    Scale = Scale,
-                    VoxelSide = _meshGen.VoxelSide,
-                    OutputMesh = this.OutputMeshData[0],
-                    Coords = Coords,
-                    IndexVertexCounts = this._indexVertexCounts,
-                    EdgeConnection = _meshGen.EdgeConnection,
-                    EdgeDirection = _meshGen.EdgeDirection,
-                    Smooth = _meshGen.Smooth,
+                    var job = new DualContouringJob()
+                    {
+                        EvalGraph = _meshGen.DensityFormulaEvaluator,
+                        Densities = _densities,
+                        EdgeTable = _meshGen.EdgeTable,
+                        Scale = Scale,
+                        VoxelSide = _meshGen.VoxelSide,
+                        OutputMesh = this.OutputMeshData[0],
+                        Coords = Coords,
+                        IndexVertexCounts = this._indexVertexCounts,
+                        EdgeConnection = _meshGen.EdgeConnection,
+                        EdgeDirection = _meshGen.EdgeDirection,
+                        Smooth = _meshGen.Smooth,
 
-                };
-                this._handle = job.Schedule(h);
+                    };
+                    this._handle = job.Schedule(h);
+                    break;
+                }
+                case Algorithm.DualContouringSplit:
+                {
+                    var job = new DualContouringJob2
+                    {
+                        VoxelSide = _meshGen.VoxelSide,
+                        Isolevel = 0,
+                        Densities = _densities,
+                        // edgeMasks = _edgeMasks,
+                    }.Schedule();
+                    job = new DualContouringJob2Phase2
+                    {
+                        VoxelSide = _meshGen.VoxelSide,
+                        Scale = Scale,
+                        Coords = Coords,
+                        OutputMesh = OutputMeshData[0],
+                        IndexVertexCounts = _indexVertexCounts,
+                        // edgeMasks = _edgeMasks,
+                        EvalGraph = _meshGen.DensityFormulaEvaluator,
+                        outputVerts = default,
+                        vertIndices = default,
+                    }.Schedule(job);
+                    job = new DualContouringJob2Smooth
+                    {
+                        VoxelSide = _meshGen.VoxelSide,
+                        Isolevel = 0,
+                        Scale = Scale,
+                        Densities = _densities,
+                        EdgeTable = _meshGen.EdgeTable,
+                        EdgeConnection = _meshGen.EdgeConnection,
+                        EdgeDirection = _meshGen.EdgeDirection,
+                        vertIndices = default,
+                        outputVerts = default,
+                    }.Schedule(job);
+                    break;
+                }
+                default:
+                    throw new System.NotImplementedException(_meshGen.Algorithm.ToString());
             }
 
             // Debug.Log($"Generate {Coords} max vert {maxVertexCount} max indices {maxIndexCount}");

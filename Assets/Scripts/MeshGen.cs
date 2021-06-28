@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.Design;
+using Eval;
+using Eval.Runtime;
 using Unity.Collections;
 using Unity.Jobs;
 using Unity.Mathematics;
@@ -231,5 +233,6 @@ namespace UnityTemplateProjects
     {
         MarchingCube,
         DualContouring,
+        DualContouringSplit,
     }
 }

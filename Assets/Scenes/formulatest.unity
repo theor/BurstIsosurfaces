@@ -156,7 +156,80 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   Test:
-    Input: v3(cos(t*f),sin(t*f),0)
+    Input: v3(cos(t*f),sin(t*f),0)*1
+    Content:
+    - Op: 1
+      Val:
+        x: 1
+        y: 1
+        z: 1
+      Index: 0
+    - Op: 1
+      Val:
+        x: 0
+        y: 0
+        z: 0
+      Index: 0
+    - Op: 1
+      Val:
+        x: 7
+        y: 7
+        z: 7
+      Index: 0
+    - Op: 2
+      Val:
+        x: 0
+        y: 0
+        z: 0
+      Index: 0
+    - Op: 5
+      Val:
+        x: 0
+        y: 0
+        z: 0
+      Index: 0
+    - Op: 14
+      Val:
+        x: 0
+        y: 0
+        z: 0
+      Index: 0
+    - Op: 1
+      Val:
+        x: 7
+        y: 7
+        z: 7
+      Index: 0
+    - Op: 2
+      Val:
+        x: 0
+        y: 0
+        z: 0
+      Index: 0
+    - Op: 5
+      Val:
+        x: 0
+        y: 0
+        z: 0
+      Index: 0
+    - Op: 15
+      Val:
+        x: 0
+        y: 0
+        z: 0
+      Index: 0
+    - Op: 24
+      Val:
+        x: 0
+        y: 0
+        z: 0
+      Index: 0
+    - Op: 5
+      Val:
+        x: 0
+        y: 0
+        z: 0
+      Index: 0
     NamedValues:
     - Name: f
       Value: {x: 7, y: 0, z: 0}

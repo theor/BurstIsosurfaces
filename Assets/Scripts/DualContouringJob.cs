@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using Eval.Runtime;
 using JetBrains.Annotations;
 using Unity.Burst;
 using Unity.Collections;
@@ -36,33 +37,6 @@ namespace UnityTemplateProjects
         [ReadOnly]
         public NativeArray<float3> EdgeDirection;
 
-        struct EdgeCase
-        {
-            public byte VertexCount;
-            public byte Flipped;
-            public byte Mask;
-            public unsafe fixed byte Vertices[12];
-
-            public EdgeCase(byte vertexCount) : this()
-            {
-                VertexCount = vertexCount;
-                Flipped = 0;
-            }
-
-            public unsafe EdgeCase Quad0(byte va, byte vb, byte vc, byte vd) => Quad(0, va, vb, vc, vd);
-            public unsafe EdgeCase Quad1(byte va, byte vb, byte vc, byte vd) => Quad(1, va, vb, vc, vd);
-            public unsafe EdgeCase Quad2(byte va, byte vb, byte vc, byte vd) => Quad(2, va, vb, vc, vd);
-            public unsafe EdgeCase Quad(byte quadIndex, byte va, byte vb, byte vc, byte vd)
-            {
-                Assert.IsTrue(quadIndex < VertexCount/4);
-                Vertices[0+4*quadIndex] = va;
-                Vertices[1+4*quadIndex] = vb;
-                Vertices[2+4*quadIndex] = vc;
-                Vertices[3+4*quadIndex] = vd;
-                return this;
-            }
-        }
-
         /*
          * v:         0          2 - 3     < this one
          *  paper:  /              / | 
@@ -81,43 +55,6 @@ namespace UnityTemplateProjects
          *   3 --- 7        0 --- 1
          *  paper           actual from marching cube
          */
-        static unsafe NativeArray<EdgeCase> EdgeCases(Allocator allocator)
-        {
-            var a = new NativeArray<EdgeCase>(16, allocator);
-            a[0b0000] = new EdgeCase(0);
-            a[0b0001] = new EdgeCase(4).Quad0(0,1,5,4);
-            a[0b0010] = new EdgeCase(4).Quad0(3,2,1,0);
-            a[0b0011] = new EdgeCase(8).Quad0(0,1,5,4).Quad1(3,2,1,0);
-            a[0b0100] = new EdgeCase(4).Quad0(0,4,7,3);
-            a[0b0101] = new EdgeCase(8).Quad0(0,1,5,4).Quad1(7,3,0,4);
-            a[0b0110] = new EdgeCase(8).Quad0(3,2,1,0).Quad1(7,3,0,4);
-            a[0b0111] = new EdgeCase(12).Quad0(0,1,5,4).Quad1(3,2,1,0).Quad2(7,3,0,4);
-            for (int i = 0b1000; i <= 0b1111; i++)
-            {
-                var edgeCase = a[(~i) & 0b00001111];
-                edgeCase.Flipped = 1;
-                a[i] = edgeCase;
-            }
-
-            for (int i = 0; i <= 0b1111; i++)
-            {
-                var c = a[i];
-                c.Mask = (byte) i;
-                a[i] = c;
-            }
-
-            // for (int i = 0; i < 16; i++)
-            // {
-            //     var edgeCase = a[i];
-            //     var verts = String.Join(",", Enumerable.Repeat(0ul, edgeCase.VertexCount).Select((_, j) =>
-            //     {
-            //         var edgeCase = a[i];
-            //         return edgeCase.Vertices[j];
-            //     }));
-            //     Debug.Log($"{i:X} {edgeCase.VertexCount} {verts}");
-            // }
-            return a;
-        }
 
         float3 SampleNormal(ref EvalState evalState, float3 pos)
         {
@@ -129,16 +66,6 @@ namespace UnityTemplateProjects
                 var p = pos + e * delta;
                 return evalState.Run(g, &p).x;
             }
-
-            // float d(NativeArray<float> array, int3 delta)
-            // {
-            //     var coordsToIndex = MeshGen.CoordsToIndex(pos + delta, v3);
-            //     Assert.AreEqual(pos+delta, MeshGen.IndexToCoords(coordsToIndex, v3));
-            //     var f = array[coordsToIndex];
-            //     // Debug.Log($"{pos+delta} {delta} {f:F2}");
-            //     return f;
-            // }
-            // var f = 1f;
             return
                 new float3(
                     d(ref evalState, EvalGraph, new float3(-1, 0, 0)) -
@@ -148,31 +75,8 @@ namespace UnityTemplateProjects
                     d(ref evalState, EvalGraph, new float3(0, 0, -1)) -
                     d(ref evalState, EvalGraph, new float3(0, 0, 1))
                 );
-            // new float3(
-            //         MeshGen.Density(pos + f*new float3(-1, 0, 0)) -
-            //             MeshGen.Density(pos + f*new float3(1, 0, 0)),
-            //         MeshGen.Density(pos + f*new float3(0, -1, 0)) -
-            //         MeshGen.Density(pos + f*new float3(0, 1, 0)),
-            //         MeshGen.Density(pos + f*new float3(0, 0, -1)) -
-            //         MeshGen.Density(pos + f*new float3(0, 0, 1))
-            //     );
         }
 
-        ushort GetEdgeMask(in MeshGen.OctFloat voxelDensities)
-        {
-            byte cubeIndex = 0;
-            if (voxelDensities[0] < Isolevel) cubeIndex |= 1;
-            if (voxelDensities[1] < Isolevel) cubeIndex |= 2;
-            if (voxelDensities[2] < Isolevel) cubeIndex |= 4;
-            if (voxelDensities[3] < Isolevel) cubeIndex |= 8;
-            if (voxelDensities[4] < Isolevel) cubeIndex |= 16;
-            if (voxelDensities[5] < Isolevel) cubeIndex |= 32;
-            if (voxelDensities[6] < Isolevel) cubeIndex |= 64;
-            if (voxelDensities[7] < Isolevel) cubeIndex |= 128;
-
-            ushort edgeMask = EdgeTable[cubeIndex];
-            return edgeMask;
-        }
         public unsafe void Execute()
         {
             int voxelSide = VoxelSide;
@@ -206,7 +110,7 @@ namespace UnityTemplateProjects
 
             //0.25 - dist(coords, 0.5)
             // 0.25 - y(coords)
-            var edgeCases = EdgeCases(Allocator.Temp);
+            var edgeCases = EdgeCase.EdgeCases(Allocator.Temp);
                 
             for (int x = 0; x < v1; x++)
             {
@@ -302,7 +206,7 @@ namespace UnityTemplateProjects
                             MeshGen.OctFloat voxelDensities;
                             for (int j = 0; j < 8; j++) voxelDensities[j] = Densities[corners[j]];
 
-                            var edgeMask = GetEdgeMask(voxelDensities);
+                            var edgeMask = EdgeCase.GetEdgeMask(EdgeTable, Isolevel, voxelDensities);
                             if(edgeMask == 0)
                                 continue;
                             for (int i = 0; i < 12; i++)
@@ -449,6 +353,87 @@ namespace UnityTemplateProjects
                 AddTriIndex(getV(vertices[2]), v1, ref vertIndices, delta, ref outputVerts, ref nextVertexIndex, ref outputNormals, ref evalState,  ref outputTris, ref outputIndexIndex);
                 AddTriIndex(getV(vertices[3]), v1, ref vertIndices, delta, ref outputVerts, ref nextVertexIndex, ref outputNormals, ref evalState,  ref outputTris, ref outputIndexIndex);
             }
+        }
+    }
+
+    public struct EdgeCase
+    {
+        public byte VertexCount;
+        public byte Flipped;
+        public byte Mask;
+        public unsafe fixed byte Vertices[12];
+
+        public EdgeCase(byte vertexCount) : this()
+        {
+            VertexCount = vertexCount;
+            Flipped = 0;
+        }
+
+        public unsafe EdgeCase Quad0(byte va, byte vb, byte vc, byte vd) => Quad(0, va, vb, vc, vd);
+        public unsafe EdgeCase Quad1(byte va, byte vb, byte vc, byte vd) => Quad(1, va, vb, vc, vd);
+        public unsafe EdgeCase Quad2(byte va, byte vb, byte vc, byte vd) => Quad(2, va, vb, vc, vd);
+        public unsafe EdgeCase Quad(byte quadIndex, byte va, byte vb, byte vc, byte vd)
+        {
+            Assert.IsTrue(quadIndex < VertexCount/4);
+            Vertices[0+4*quadIndex] = va;
+            Vertices[1+4*quadIndex] = vb;
+            Vertices[2+4*quadIndex] = vc;
+            Vertices[3+4*quadIndex] = vd;
+            return this;
+        }
+
+        public static unsafe NativeArray<EdgeCase> EdgeCases(Allocator allocator)
+        {
+            var a = new NativeArray<EdgeCase>(16, allocator);
+            a[0b0000] = new EdgeCase(0);
+            a[0b0001] = new EdgeCase(4).Quad0(0,1,5,4);
+            a[0b0010] = new EdgeCase(4).Quad0(3,2,1,0);
+            a[0b0011] = new EdgeCase(8).Quad0(0,1,5,4).Quad1(3,2,1,0);
+            a[0b0100] = new EdgeCase(4).Quad0(0,4,7,3);
+            a[0b0101] = new EdgeCase(8).Quad0(0,1,5,4).Quad1(7,3,0,4);
+            a[0b0110] = new EdgeCase(8).Quad0(3,2,1,0).Quad1(7,3,0,4);
+            a[0b0111] = new EdgeCase(12).Quad0(0,1,5,4).Quad1(3,2,1,0).Quad2(7,3,0,4);
+            for (int i = 0b1000; i <= 0b1111; i++)
+            {
+                var edgeCase = a[(~i) & 0b00001111];
+                edgeCase.Flipped = 1;
+                a[i] = edgeCase;
+            }
+
+            for (int i = 0; i <= 0b1111; i++)
+            {
+                var c = a[i];
+                c.Mask = (byte) i;
+                a[i] = c;
+            }
+
+            // for (int i = 0; i < 16; i++)
+            // {
+            //     var edgeCase = a[i];
+            //     var verts = String.Join(",", Enumerable.Repeat(0ul, edgeCase.VertexCount).Select((_, j) =>
+            //     {
+            //         var edgeCase = a[i];
+            //         return edgeCase.Vertices[j];
+            //     }));
+            //     Debug.Log($"{i:X} {edgeCase.VertexCount} {verts}");
+            // }
+            return a;
+        }
+
+        public static ushort GetEdgeMask(NativeArray<ushort> edgeTable, float isolevel, in MeshGen.OctFloat voxelDensities)
+        {
+            byte cubeIndex = 0;
+            if (voxelDensities[0] < isolevel) cubeIndex |= 1;
+            if (voxelDensities[1] < isolevel) cubeIndex |= 2;
+            if (voxelDensities[2] < isolevel) cubeIndex |= 4;
+            if (voxelDensities[3] < isolevel) cubeIndex |= 8;
+            if (voxelDensities[4] < isolevel) cubeIndex |= 16;
+            if (voxelDensities[5] < isolevel) cubeIndex |= 32;
+            if (voxelDensities[6] < isolevel) cubeIndex |= 64;
+            if (voxelDensities[7] < isolevel) cubeIndex |= 128;
+
+            ushort edgeMask = edgeTable[cubeIndex];
+            return edgeMask;
         }
     }
 }

@@ -15,6 +15,7 @@ namespace Eval.Runtime
             fixed (Node* p = nodes)
                 return xxHash3.Hash128(p, UnsafeUtility.SizeOf<Node>() * nodes.Length);
         }
+        [Serializable]
         public struct Node
         {
             public EvalOp Op;

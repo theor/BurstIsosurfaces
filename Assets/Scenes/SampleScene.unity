@@ -726,6 +726,7 @@ MonoBehaviour:
   VoxelSide: 1
   DensityFormula:
     Input: 
+    Content: []
     NamedValues: []
     Params: []
   Algorithm: 0
@@ -1022,10 +1023,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f96958bdb52f4156b3756a2cb0238a07, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Target: {fileID: 1435971622}
+  Target: {fileID: 1687258585}
   Material: {fileID: 2100000, guid: 6ed680514c08b694aaf98cbc244b833f, type: 2}
   Scale: 1
-  ChunkDist: 1
+  ChunkDist: 2
 --- !u!4 &1474798335
 Transform:
   m_ObjectHideFlags: 0
@@ -1052,18 +1053,70 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 256e3a5e19fb4885a601406a0a1acd17, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  VoxelSide: 2
+  VoxelSide: 16
   DensityFormula:
-    Input: '0.9  - dist(coords, v3(0,4,0)) '
+    Input: fbm(z*coords + x* fbm(coords))
+    Content:
+    - Op: 2
+      Val:
+        x: 0
+        y: 0
+        z: 0
+      Index: 0
+    - Op: 20
+      Val:
+        x: 0
+        y: 0
+        z: 0
+      Index: 0
+    - Op: 1
+      Val:
+        x: 0.29
+        y: 0.29
+        z: 0.29
+      Index: 0
+    - Op: 5
+      Val:
+        x: 0
+        y: 0
+        z: 0
+      Index: 0
+    - Op: 2
+      Val:
+        x: 0
+        y: 0
+        z: 0
+      Index: 0
+    - Op: 1
+      Val:
+        x: 0.18
+        y: 0.18
+        z: 0.18
+      Index: 0
+    - Op: 5
+      Val:
+        x: 0
+        y: 0
+        z: 0
+      Index: 0
+    - Op: 3
+      Val:
+        x: 0
+        y: 0
+        z: 0
+      Index: 0
+    - Op: 20
+      Val:
+        x: 0
+        y: 0
+        z: 0
+      Index: 0
     NamedValues:
     - Name: x
-      Value: {x: 0.07, y: 0, z: 0}
-      IsSingleFloat: 1
-    - Name: y
-      Value: {x: -6.87, y: 0, z: 0}
+      Value: {x: 0.29, y: 0, z: 0}
       IsSingleFloat: 1
     - Name: z
-      Value: {x: 9.51, y: 0, z: 0}
+      Value: {x: 0.18, y: 0, z: 0}
       IsSingleFloat: 1
     Params:
     - coords
@@ -1246,13 +1299,13 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1687258581}
-  m_LocalRotation: {x: -0.6097105, y: 0.34960395, z: 0.62396574, w: 0.34160957}
-  m_LocalPosition: {x: 0.038966388, y: -1.5176532, z: 1.3857912}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 4, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
   m_RootOrder: 0
-  m_LocalEulerAnglesHint: {x: 20.146, y: 195.09, z: 0.001}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &1687258586
 MonoBehaviour:
   m_ObjectHideFlags: 0

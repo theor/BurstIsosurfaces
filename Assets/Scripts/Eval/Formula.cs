@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using Eval.Runtime;
+using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
 
@@ -44,6 +45,9 @@ namespace Eval
 
         [Delayed]
         public string Input;
+
+        [SerializeField]
+        private EvalGraph.Node[] Content;
         public List<FormulaParam> NamedValues;
         public List<string> Params;
 
@@ -61,12 +65,12 @@ namespace Eval
             if (_dirty)
             {
                 _dirty = false;
-                var parsed = Init();
+                Init();
                 
                 _lastFormulaHashCode = Input?.GetHashCode() ?? 0;
             
                 EvalGraph oldGraph = evalGraph;
-                evalGraph = new EvalGraph(parsed);
+                evalGraph = new EvalGraph(Content);
                 onFormulaChanged?.Invoke(oldGraph, evalGraph);
                 oldGraph.Dispose();
             }
@@ -75,14 +79,22 @@ namespace Eval
 
         public void Compile(out EvalGraph evalGraph)
         {
-            var parsed =Init();
+            if(Content == null)
+                Init();
+
+            // fixed (void* vptr = parsed)
+            // {
+            //     byte* bptr = (byte*) vptr;
+            //     var byteLength = UnsafeUtility.SizeOf<EvalGraph.Node>() * parsed.Length;
+            //     Content = new byte[byteLength];
+            // }
 
             _lastFormulaHashCode = Input?.GetHashCode() ?? 0; 
             
-            evalGraph = new EvalGraph(parsed);
+            evalGraph = new EvalGraph(Content);
         }
 
-        public EvalGraph.Node[] Init()
+        public void Init()
         {
             bool cleanup =
                     false
@@ -95,7 +107,7 @@ namespace Eval
             var root = Parser.Parse(Input, out _error);
             Debug.Log($"PARSING cleanup={cleanup} error={_error}");
             if (_error != null)
-                return null;
+                return;
             ulong usedValues;
             EvalGraph.Node[] parsed = null;
             if (root == null)
@@ -109,7 +121,7 @@ namespace Eval
                         NamedValues.RemoveAt(index);
             }
 
-            return parsed;
+            Content = parsed;
         }
 
         public void SetParameters(params string[] formulaParams)
