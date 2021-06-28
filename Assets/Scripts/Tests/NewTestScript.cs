@@ -1,13 +1,14 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Eval;
+using Eval.Runtime;
 using NUnit.Framework;
 using ShuntingYard;
 using Unity.Collections;
 using Unity.Jobs;
 using Unity.Mathematics;
 using UnityEngine;
-using UnityTemplateProjects;
 using Assert = UnityEngine.Assertions.Assert;
 
 public class ParsingEvaluationTests : EvaluationTestsBase
@@ -82,7 +83,7 @@ public class EvaluationTests : EvaluationTestsBase
     [Test]
     public void ConstFloat3()
     {
-        Run(new float3(1, 2, 3), new[] {new EvalGraph.Node(Op.Const_0, new float3(1, 2, 3))});
+        Run(new float3(1, 2, 3), new[] {new EvalGraph.Node(EvalOp.Const_0, new float3(1, 2, 3))});
     }
 
     [Test]
@@ -92,7 +93,7 @@ public class EvaluationTests : EvaluationTestsBase
         {
             EvalGraph.Node.Param(0),
             EvalGraph.Node.Param(1),
-            new EvalGraph.Node(Op.Add_2),
+            new EvalGraph.Node(EvalOp.Add_2),
         }, new float3(1, 2, 0), new float3(0, 0, 3));
     }
 
@@ -101,9 +102,9 @@ public class EvaluationTests : EvaluationTestsBase
     {
         Run(new float3(5, 7, 9), new[]
         {
-            new EvalGraph.Node(Op.Const_0, new float3(1, 2, 3)),
-            new EvalGraph.Node(Op.Const_0, new float3(4, 5, 6)),
-            new EvalGraph.Node(Op.Add_2),
+            new EvalGraph.Node(EvalOp.Const_0, new float3(1, 2, 3)),
+            new EvalGraph.Node(EvalOp.Const_0, new float3(4, 5, 6)),
+            new EvalGraph.Node(EvalOp.Add_2),
         });
     }
 
@@ -112,9 +113,9 @@ public class EvaluationTests : EvaluationTestsBase
     {
         Run(new float3(2), new[]
         {
-            new EvalGraph.Node(Op.Const_0, 3f),
-            new EvalGraph.Node(Op.Const_0, 6f),
-            new EvalGraph.Node(Op.Div_2),
+            new EvalGraph.Node(EvalOp.Const_0, 3f),
+            new EvalGraph.Node(EvalOp.Const_0, 6f),
+            new EvalGraph.Node(EvalOp.Div_2),
         });
     }
 }

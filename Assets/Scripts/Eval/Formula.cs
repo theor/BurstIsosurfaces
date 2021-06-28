@@ -2,22 +2,45 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using ShuntingYard;
-using Unity.Jobs;
-using Unity.Mathematics;
+using Eval.Runtime;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
 
-namespace UnityTemplateProjects
+namespace Eval
 {
+    /// <summary>
+    /// The class to store in a monobehaviour. Minimal sample:
+    /// <code>
+    /// public class FormulaTest : MonoBehaviour
+    /// {
+    ///     public Formula Test;
+    ///     private EvalGraph _evalgraph;
+    ///   
+    ///     public void Reset()
+    ///     {
+    ///         if (Test == null) Test = new Formula();
+    ///         Test.SetParameters("t");
+    ///     }
+    ///   
+    ///     private void Start() => Test.Compile(out _evalgraph);
+    ///   
+    ///       private void OnDestroy() =>_evalgraph.Dispose();
+    ///   
+    ///       private unsafe void Update()
+    ///       {
+    ///           #if UNITY_EDITOR
+    ///           Test.LiveEdit(ref _evalgraph);
+    ///           #endif
+    ///           float3 t = Time.realtimeSinceStartup;
+    ///           EvalState.Run(_evalgraph, &t, out float3 res);
+    ///           transform.localPosition = res;
+    ///       }
+    /// }
+    /// </code>
+    /// </summary>
     [Serializable]
     public class Formula
     {
-        public static FormulaParamNameComparer s_ParamNameComparer = new FormulaParamNameComparer();
-        public class FormulaParamNameComparer : IComparer<FormulaParam>
-        {
-            public int Compare(FormulaParam x, FormulaParam y) => string.Compare(x.Name, y.Name, StringComparison.Ordinal);
-        }
 
         [Delayed]
         public string Input;
@@ -100,14 +123,6 @@ namespace UnityTemplateProjects
             }
         }
     }
-
-    // [Flags]
-    // public enum FormulaParamFlags : byte
-    // {
-    //     None = 0,
-    //     Float3 = 1,
-    //     Float = 2,
-    // }
     
     [Serializable]
     public struct FormulaParam

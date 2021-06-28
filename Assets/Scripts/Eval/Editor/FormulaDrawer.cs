@@ -2,13 +2,12 @@ using System.Reflection;
 using System.Text.RegularExpressions;
 using UnityEditor;
 using UnityEngine;
-using UnityEngine.Experimental.AI;
 
 //
 
 
 
-namespace UnityTemplateProjects.Editor
+namespace Eval.Editor
 {
     [CustomPropertyDrawer(typeof(Formula))]
     public class FormulaDrawer : PropertyDrawer

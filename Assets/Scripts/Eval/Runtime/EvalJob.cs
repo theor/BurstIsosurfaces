@@ -4,7 +4,7 @@ using Unity.Collections.LowLevel.Unsafe;
 using Unity.Jobs;
 using Unity.Mathematics;
 
-namespace UnityTemplateProjects
+namespace Eval.Runtime
 {
     [BurstCompile]
     public struct EvalJob : IJob

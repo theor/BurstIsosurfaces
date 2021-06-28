@@ -1,12 +1,10 @@
 using System;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
-using Unity.Jobs;
 using Unity.Mathematics;
-using UnityEngine;
 using UnityEngine.Assertions;
 
-namespace UnityTemplateProjects
+namespace Eval.Runtime
 {
     public struct EvalGraph : IDisposable
     {
@@ -19,21 +17,21 @@ namespace UnityTemplateProjects
         }
         public struct Node
         {
-            public Op Op;
+            public EvalOp Op;
             public float3 Val;
             public byte Index;
 
-            public Node(Op op, float3 val = default)
+            public Node(EvalOp op, float3 val = default)
             {
-                Assert.AreNotEqual(Op.Param_0, op);
+                Assert.AreNotEqual(EvalOp.Param_0, op);
                 Op = op;
                 Val = val;
                 Index = 0;
             }
 
-            public static Node Param(byte index) => new Node(Op.Param_0, index);
+            public static Node Param(byte index) => new Node(EvalOp.Param_0, index);
 
-            private Node(Op op, byte index)
+            private Node(EvalOp op, byte index)
             {
                 Op = op;
                 Val = default;
@@ -62,29 +60,6 @@ namespace UnityTemplateProjects
             if(Nodes != null)
                 UnsafeUtility.Free(Nodes, _allocator);
         }
-    }
-
-    public enum Op
-    {
-        None,
-        Const_0,
-        Param_0,
-        Add_2,Sub_2,
-        Mul_2,Div_2,
-        Mod_2,
-        Minus_1,
-        Abs_1,
-        Saturate_1,
-        X_1,Y_1,Z_1,
-        Sin_1,Cos_1,Tan_1,
-        CNoise_1,
-        SNoise_1,
-        SRDNoise_1,
-        Fbm_1,
-        Fbm_4,
-        Dist_2,
-        SqDist_2,
-        V3_3,
     }
 
     public static class Fbm
