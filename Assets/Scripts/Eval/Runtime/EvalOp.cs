@@ -9,6 +9,7 @@ namespace Eval.Runtime
         None,
         Const_0,
         Param_0,
+        Ld_0,
         Add_2,Sub_2,
         Mul_2,Div_2,
         Mod_2,

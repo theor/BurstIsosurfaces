@@ -46,6 +46,9 @@ namespace Eval
         [Delayed]
         public string Input;
 
+        /* TODO [SerializeField]*/
+        private const byte ExpectedFinalStackLength = 1;
+        private const byte MaxStackSize = 10;
         [SerializeField] internal EvalGraph.Node[] Content;
         public List<FormulaParam> NamedValues;
         public List<string> Params;
@@ -69,7 +72,7 @@ namespace Eval
                 _lastFormulaHashCode = Input?.GetHashCode() ?? 0;
             
                 EvalGraph oldGraph = evalGraph;
-                evalGraph = new EvalGraph(Content);
+                evalGraph = new EvalGraph(Content, ExpectedFinalStackLength, MaxStackSize);
                 onFormulaChanged?.Invoke(oldGraph, evalGraph);
                 oldGraph.Dispose();
             }
@@ -90,7 +93,7 @@ namespace Eval
 
             _lastFormulaHashCode = Input?.GetHashCode() ?? 0; 
             
-            evalGraph = new EvalGraph(Content);
+            evalGraph = new EvalGraph(Content, ExpectedFinalStackLength, MaxStackSize);
         }
 
         public void Init()
@@ -107,16 +110,14 @@ namespace Eval
             Debug.Log($"PARSING cleanup={cleanup} error={_error}");
             if (_error != null)
                 return;
-            ulong usedValues;
+            Translator.Variables v = null;
             EvalGraph.Node[] parsed = null;
-            if (root == null)
-                usedValues = 0ul;
-            else
-                parsed = Translator.Translate(root, NamedValues, Params, out usedValues);
+            if (root != null)
+                parsed = Translator.Translate(root, NamedValues, Params, out v);
             if (cleanup)
             {
                 for (var index = NamedValues.Count - 1; index >= 0; index--)
-                    if ((usedValues & (1ul << index)) == 0)
+                    if(v != null && !v.VariableInfos.TryGetValue(NamedValues[index].Name, out var info))
                         NamedValues.RemoveAt(index);
             }
 
@@ -138,15 +139,30 @@ namespace Eval
     [Serializable]
     public struct FormulaParam
     {
+        public enum FormulaParamFlag
+        {
+            Vector3,
+            Float,
+            Formula,
+        }
         public string Name;
         public Vector3 Value;
-        public bool IsSingleFloat; 
+        public FormulaParamFlag IsSingleFloat;
+        public string SubFormula;
+        public INode SubFormulaNode { get; private set; }
 
-        public FormulaParam(string name, bool isSingleFloat = false)
+        public static FormulaParam FromSubFormula(string name, INode subformula)
+        {
+            return new FormulaParam(name, FormulaParamFlag.Formula) {SubFormulaNode = subformula};
+        }
+        
+        public FormulaParam(string name, FormulaParamFlag isSingleFloat = FormulaParamFlag.Vector3)
         {
             Name = name;
             Value = default;
             IsSingleFloat = isSingleFloat;
+            SubFormula = null;
+            SubFormulaNode = null;
         }
     }
 }

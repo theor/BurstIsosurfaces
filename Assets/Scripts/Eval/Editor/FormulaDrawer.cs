@@ -27,7 +27,7 @@ namespace Eval.Editor
             // else
             //     return base.GetPropertyHeight(property, label);
 
-            return EditorGUIUtility.singleLineHeight * i;
+            return EditorGUIUtility.singleLineHeight * i * 2;
         }
 
         // Draw the property inside the given rect
@@ -100,7 +100,7 @@ namespace Eval.Editor
                     var flagPRopWidth = 100;
                     valueRect.xMax -= flagPRopWidth;
                     flagsRect.xMin = flagsRect.xMax - flagPRopWidth;
-                    if (!flagProp.boolValue)
+                    if (flagProp.enumValueIndex == 0)
                     {
                         EditorGUI.PropertyField(valueRect, valProp, new GUIContent(nameProp.stringValue));
                     }
@@ -108,6 +108,10 @@ namespace Eval.Editor
                     {
                         EditorGUI.PropertyField(valueRect, valProp.FindPropertyRelative(nameof(Vector3.x)),
                             new GUIContent(nameProp.stringValue));
+                        valueRect.y += EditorGUIUtility.singleLineHeight;
+                        rect.y += EditorGUIUtility.singleLineHeight;
+                        EditorGUI.PropertyField(valueRect, elt.FindPropertyRelative(nameof(FormulaParam.SubFormula)),
+                            new GUIContent(nameProp.stringValue + " formula"));
                         // valProp.vector3Value = 
                     }
 

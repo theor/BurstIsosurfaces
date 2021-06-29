@@ -31,6 +31,11 @@ namespace Eval.Runtime
             }
 
             public static Node Param(byte index) => new Node(EvalOp.Param_0, index);
+            public static Node Ld(byte index)
+            {
+                Assert.AreNotEqual((byte)0, index, "Index must be in base1");
+                return new Node(EvalOp.Ld_0, index);
+            }
 
             private Node(EvalOp op, byte index)
             {
@@ -47,13 +52,16 @@ namespace Eval.Runtime
         [NativeDisableUnsafePtrRestriction]
         public unsafe Node* Nodes;
         public ushort Length;
+        public byte ExpectedFinalStackSize, MaxStackSize;
         private Allocator _allocator;
 
 
-        public unsafe EvalGraph(Node[] nodes, Allocator allocator = Allocator.Persistent)
+        public unsafe EvalGraph(Node[] nodes, byte expectedFinalStackSize, byte maxStackSize, Allocator allocator = Allocator.Persistent)
         {
             var size = (ushort) (UnsafeUtility.SizeOf<Node>() * nodes.Length);
             Length = (ushort) nodes.Length;
+            ExpectedFinalStackSize = expectedFinalStackSize;
+            MaxStackSize = maxStackSize;
             _allocator = allocator;
             Nodes = (Node*) UnsafeUtility.Malloc(size, UnsafeUtility.AlignOf<Node>(),
                 _allocator);

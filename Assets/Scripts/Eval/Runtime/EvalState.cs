@@ -34,7 +34,7 @@ namespace Eval.Runtime
         [BurstCompile]
         public unsafe float3 Run(in EvalGraph graph,  float3* @params)
         {
-            using (_stack = new NativeList<float3>(10, Allocator.Temp))
+            using (_stack = new NativeList<float3>(graph.MaxStackSize, Allocator.Temp))
             {
                 _current = 0;
                 _stack.Clear();
@@ -43,15 +43,22 @@ namespace Eval.Runtime
                     var node = graph.Nodes[_current];
                     switch (node.Op)
                     {
+                        // unary
                         case EvalOp.Minus_1:
                             Push(-Pop());
                             break;
+                        // no params
                         case EvalOp.Const_0:
                             Push(node.Val);
                             break;
                         case EvalOp.Param_0:
                             Push(@params[node.Index]);
                             break;
+                        case EvalOp.Ld_0:
+                            Push(_stack[node.Index-1]);
+                            break;
+                        
+                        // binary and more
                         case EvalOp.Add_2:
                             Push(Pop() + Pop());
                             break;
@@ -129,8 +136,9 @@ namespace Eval.Runtime
                     _current++;
                 }
 
-                Assert.AreEqual(1, _stack.Length);
-                return _stack[0];
+                Assert.AreNotEqual(0, _stack.Length);
+                Assert.AreEqual(graph.ExpectedFinalStackSize, _stack.Length);
+                return _stack[_stack.Length-1];
             }
         }
         
