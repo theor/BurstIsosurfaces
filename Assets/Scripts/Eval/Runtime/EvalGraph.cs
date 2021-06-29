@@ -38,6 +38,11 @@ namespace Eval.Runtime
                 Val = default;
                 Index = index;
             }
+
+            public override string ToString()
+            {
+                return $"{nameof(Op)}: {Op}, {nameof(Val)}: {Val}, {nameof(Index)}: {Index}";
+            }
         }
         [NativeDisableUnsafePtrRestriction]
         public unsafe Node* Nodes;

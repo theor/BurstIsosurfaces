@@ -45,7 +45,7 @@ namespace Eval
                         nodes.Add(EvalGraph.Node.Param((byte) paramIndex));
                     else
                     {
-                        var variableParam = new FormulaParam(variable.Id);
+                        var variableParam = new FormulaParam(variable.Id, variable.Id.StartsWith("f", StringComparison.OrdinalIgnoreCase));
                         var idx = variables.BinarySearch(variableParam, s_ParamNameComparer);
 
                         if (idx < 0)

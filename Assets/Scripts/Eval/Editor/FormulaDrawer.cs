@@ -1,11 +1,8 @@
+using System;
 using System.Reflection;
 using System.Text.RegularExpressions;
 using UnityEditor;
 using UnityEngine;
-
-//
-
-
 
 namespace Eval.Editor
 {
@@ -103,8 +100,10 @@ namespace Eval.Editor
                     var flagPRopWidth = 100;
                     valueRect.xMax -= flagPRopWidth;
                     flagsRect.xMin = flagsRect.xMax - flagPRopWidth;
-                    if(!flagProp.boolValue)
+                    if (!flagProp.boolValue)
+                    {
                         EditorGUI.PropertyField(valueRect, valProp, new GUIContent(nameProp.stringValue));
+                    }
                     else
                     {
                         EditorGUI.PropertyField(valueRect, valProp.FindPropertyRelative(nameof(Vector3.x)),

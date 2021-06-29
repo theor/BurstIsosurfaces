@@ -46,8 +46,7 @@ namespace Eval
         [Delayed]
         public string Input;
 
-        [SerializeField]
-        private EvalGraph.Node[] Content;
+        [SerializeField] internal EvalGraph.Node[] Content;
         public List<FormulaParam> NamedValues;
         public List<string> Params;
 

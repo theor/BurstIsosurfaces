@@ -15,7 +15,7 @@ namespace UnityTemplateProjects
         public void Reset()
         {
             if (Test == null) Test = new Formula();
-            Test.SetParameters("t");
+            Test.SetParameters("t", "pos");
         }
 
         private void Start()
@@ -33,13 +33,15 @@ namespace UnityTemplateProjects
 #if UNITY_EDITOR
             Test.LiveEdit(ref _evalgraph);
 #endif
-            float3 t = Time.realtimeSinceStartup;
+            float3* parameters = stackalloc float3[2];
+            parameters[0] =Time.realtimeSinceStartup; 
+            parameters[1] =transform.localPosition; 
             float3 res = float3.zero;
             // Stopwatch sw = Stopwatch.StartNew();
             // for (int i = 0; i < 100000; i++)
             {
                 // res = new float3(math.cos(t * 7), math.sin(t * 7), 0);
-                EvalState.Run(_evalgraph, &t, out res);
+                EvalState.Run(_evalgraph, parameters, out res);
             }
 
             // var ms = sw.ElapsedMilliseconds;
