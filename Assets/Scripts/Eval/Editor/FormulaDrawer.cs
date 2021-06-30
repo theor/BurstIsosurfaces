@@ -23,19 +23,34 @@ namespace Eval.Editor
             var formula = ((Formula) property.GetSerializedObject());
             if (!string.IsNullOrEmpty(formula._error))
                 i++;
+            foreach (var formulaNamedValue in formula.NamedValues)
+            {
+                if (!String.IsNullOrEmpty(formulaNamedValue.SubFormulaError))
+                    i++;
+            }
             // }
             // else
             //     return base.GetPropertyHeight(property, label);
 
-            return EditorGUIUtility.singleLineHeight * i * 2;
+            return EditorGUIUtility.singleLineHeight * i;
         }
 
         // Draw the property inside the given rect
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {
-            void UpdateInstance()
+            var formula = (Formula)property.GetSerializedObject();
+
+            void UpdateInstance(SerializedObject serializedObject, int subFormulaIndexToParse = -1)
             {
-                var formula = ((Formula) property.GetSerializedObject());
+                serializedObject.ApplyModifiedProperties();
+                if (subFormulaIndexToParse != -1)
+                {
+                    var formulaNamedValue = formula.NamedValues[subFormulaIndexToParse];
+                    formulaNamedValue.ParseSubFormula();
+                    formula.NamedValues[subFormulaIndexToParse] = formulaNamedValue;
+                    if (!String.IsNullOrEmpty(formulaNamedValue.SubFormulaError))
+                        return;
+                }
                 formula.Init();
                 formula._dirty = true;
             }
@@ -54,14 +69,13 @@ namespace Eval.Editor
                 if (EditorGUI.EndChangeCheck())
                 {
                     // Debug.Log("CHANGE");
-                    formulaObject.ApplyModifiedProperties();
-                    UpdateInstance();
+                    UpdateInstance(formulaObject);
                     formulaObject.Update();
                     // Debug.Log(EditorJsonUtility.ToJson(formulaObject.targetObject));
                 }
                 
                 EditorGUI.indentLevel++;
-                var e = ((Formula) property.GetSerializedObject())._error;
+                var e = ((Formula) formula)._error;
                 if (!string.IsNullOrEmpty(e))
                 {
                     rect.y += EditorGUIUtility.singleLineHeight;
@@ -71,8 +85,6 @@ namespace Eval.Editor
                 }
 
                 var namedValues = property.FindPropertyRelative(nameof(Formula.NamedValues));
-                bool enabled = GUI.enabled;
-                // GUI.enabled = false;
                 var paramsProp = property.FindPropertyRelative(nameof(Formula.Params));
                 for (int i = 0; i < paramsProp.arraySize; i++)
                 {
@@ -84,10 +96,7 @@ namespace Eval.Editor
                     EditorGUI.LabelField(r2, "Parameter");
                 }
                 
-                // GUI.enabled = enabled;
                 
-                
-                EditorGUI.BeginChangeCheck();
                 for (int i = 0; i < namedValues.arraySize; i++)
                 {
                     var elt = namedValues.GetArrayElementAtIndex(i);
@@ -100,35 +109,43 @@ namespace Eval.Editor
                     var flagPRopWidth = 100;
                     valueRect.xMax -= flagPRopWidth;
                     flagsRect.xMin = flagsRect.xMax - flagPRopWidth;
-                    if (flagProp.enumValueIndex == 0)
+                    switch (flagProp.enumValueIndex)
                     {
-                        EditorGUI.PropertyField(valueRect, valProp, new GUIContent(nameProp.stringValue));
-                    }
-                    else
-                    {
-                        EditorGUI.PropertyField(valueRect, valProp.FindPropertyRelative(nameof(Vector3.x)),
-                            new GUIContent(nameProp.stringValue));
-                        valueRect.y += EditorGUIUtility.singleLineHeight;
-                        rect.y += EditorGUIUtility.singleLineHeight;
-                        EditorGUI.PropertyField(valueRect, elt.FindPropertyRelative(nameof(FormulaParam.SubFormula)),
-                            new GUIContent(nameProp.stringValue + " formula"));
-                        // valProp.vector3Value = 
+                        case (int)FormulaParam.FormulaParamFlag.Vector3:
+                            EditorGUI.BeginChangeCheck();
+                            EditorGUI.PropertyField(valueRect, valProp, new GUIContent(nameProp.stringValue));
+                            if (EditorGUI.EndChangeCheck()) UpdateInstance(formulaObject);
+                            break;
+                        case (int)FormulaParam.FormulaParamFlag.Float:
+                            EditorGUI.BeginChangeCheck();
+                            EditorGUI.PropertyField(valueRect, valProp.FindPropertyRelative(nameof(Vector3.x)),
+                                new GUIContent(nameProp.stringValue));
+                            if (EditorGUI.EndChangeCheck()) UpdateInstance(formulaObject);
+                            break;
+                        case (int)FormulaParam.FormulaParamFlag.Formula:
+                            EditorGUI.BeginChangeCheck();
+                            EditorGUI.PropertyField(valueRect, elt.FindPropertyRelative(nameof(FormulaParam.SubFormula)),
+                                new GUIContent(nameProp.stringValue));
+                            if (EditorGUI.EndChangeCheck()) UpdateInstance(formulaObject, i);
+                            break;
                     }
 
                     var w = EditorGUIUtility.labelWidth;
-                    EditorGUIUtility.labelWidth = 50;
-                    EditorGUI.PropertyField(flagsRect, flagProp, new GUIContent("Float"));
+                    EditorGUIUtility.labelWidth = 1;
+                    EditorGUI.PropertyField(flagsRect, flagProp);
                     EditorGUIUtility.labelWidth = w;
 
+                    if (!string.IsNullOrEmpty(formula.NamedValues[i].SubFormulaError))
+                    {
+                        var r = rect;
+                        r.y += EditorGUIUtility.singleLineHeight;
+                        r.xMin += 16;
+                        EditorGUI.HelpBox(r, formula.NamedValues[i].SubFormulaError, MessageType.Error);
+                    }
+
 
                 }
 
-                if (EditorGUI.EndChangeCheck())
-                {
-                    formulaObject.ApplyModifiedProperties();
-                    UpdateInstance();
-
-                }
                 EditorGUI.indentLevel--;
 
                 EditorGUI.EndProperty();

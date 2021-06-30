@@ -78,12 +78,14 @@ namespace Eval
                         else
                             variableParam = variables[idx];
 
-                        if (!variableInfos.VariableInfos.TryGetValue(variable.Id, out var info))
+                        if (!variableInfos.VariableInfos.TryGetValue(variable.Id, out var info)) 
                         {
                             variableInfos.VariableInfos.Add(variable.Id, info = new VariableInfo());
                             if (variableParam.IsSingleFloat == FormulaParam.FormulaParamFlag.Formula)
                             {
                                 info.Translated = new List<EvalGraph.Node>();
+                                if(info.Translated == null && string.IsNullOrEmpty(variableParam.SubFormulaError))
+                                    variableParam.ParseSubFormula();
                                 Rec(info.Translated, variables, variableParam.SubFormulaNode, formulaParams, variableInfos);
                                 info.Index = variableInfos.NextIndex++;
                             }
@@ -160,7 +162,7 @@ namespace Eval
                     nodes.Add(new EvalGraph.Node(overload.OpCode));
                     break;
 
-                default: throw new NotImplementedException(node.ToString());
+                default: throw new NotImplementedException(node?.ToString() ?? "null");
             }
         }
     }

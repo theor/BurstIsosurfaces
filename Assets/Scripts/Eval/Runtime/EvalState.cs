@@ -32,6 +32,11 @@ namespace Eval.Runtime
         }
 
         [BurstCompile]
+        public static unsafe void Run(in EvalGraph graph, float3 singleParam, out float3 res)
+        {
+            Run(graph, &singleParam, out res);
+        }
+        [BurstCompile]
         public unsafe float3 Run(in EvalGraph graph,  float3* @params)
         {
             using (_stack = new NativeList<float3>(graph.MaxStackSize, Allocator.Temp))

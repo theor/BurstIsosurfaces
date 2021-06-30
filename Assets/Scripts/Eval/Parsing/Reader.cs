@@ -23,6 +23,8 @@ namespace Eval
 
         public bool Done => _i >= _input.Length;
         private char NextChar => _input[_i];
+        public int CurrentTokenIndex => _i;
+
         private char ConsumeChar() => _input[_i++];
 
         public string CurrentToken;

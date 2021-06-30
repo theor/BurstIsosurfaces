@@ -53,7 +53,13 @@ namespace Eval
 
         static Operator ReadOperator(string input, bool unary)
         {
-            return Ops.Single(o => o.Value.Str == input && o.Value.Unary == unary).Value;
+            foreach (var o in Ops)
+            {
+                if (o.Value.Str == input && o.Value.Unary == unary)
+                    return o.Value;
+            }
+
+            throw new InvalidDataException($"Cannot match operator '{(unary ? "u" : "bi")}nary {input}'");
         }
 
         public static INode Parse(string s, out string error)
@@ -76,7 +82,7 @@ namespace Eval
             }
             catch (Exception e)
             {
-                error = e.Message;
+                error = $"{r.CurrentTokenIndex}: {e.Message}";
                 return null;
             }
         }

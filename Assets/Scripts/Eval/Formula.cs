@@ -46,8 +46,8 @@ namespace Eval
         [Delayed]
         public string Input;
 
-        /* TODO [SerializeField]*/
-        private const byte ExpectedFinalStackLength = 1;
+        [SerializeField]
+        private int ExpectedFinalStackLength;
         private const byte MaxStackSize = 10;
         [SerializeField] internal EvalGraph.Node[] Content;
         public List<FormulaParam> NamedValues;
@@ -68,11 +68,17 @@ namespace Eval
             {
                 _dirty = false;
                 Init();
-                
                 _lastFormulaHashCode = Input?.GetHashCode() ?? 0;
-            
                 EvalGraph oldGraph = evalGraph;
-                evalGraph = new EvalGraph(Content, ExpectedFinalStackLength, MaxStackSize);
+                if (Content == null)
+                {
+                    onFormulaChanged?.Invoke(oldGraph, default);
+                    oldGraph.Dispose();
+                    return;
+                }
+                
+            
+                evalGraph = new EvalGraph(Content, (byte) ExpectedFinalStackLength, MaxStackSize);
                 onFormulaChanged?.Invoke(oldGraph, evalGraph);
                 oldGraph.Dispose();
             }
@@ -81,7 +87,7 @@ namespace Eval
 
         public void Compile(out EvalGraph evalGraph)
         {
-            if(Content == null)
+            if(Content == null || ExpectedFinalStackLength == 0)
                 Init();
 
             // fixed (void* vptr = parsed)
@@ -93,7 +99,7 @@ namespace Eval
 
             _lastFormulaHashCode = Input?.GetHashCode() ?? 0; 
             
-            evalGraph = new EvalGraph(Content, ExpectedFinalStackLength, MaxStackSize);
+            evalGraph = new EvalGraph(Content, (byte) ExpectedFinalStackLength, MaxStackSize);
         }
 
         public void Init()
@@ -107,13 +113,24 @@ namespace Eval
 
 
             var root = Parser.Parse(Input, out _error);
-            Debug.Log($"PARSING cleanup={cleanup} error={_error}");
+            // Debug.Log($"PARSING cleanup={cleanup} error={_error}");
             if (_error != null)
+            {
+                Content = null;
                 return;
+            }
             Translator.Variables v = null;
             EvalGraph.Node[] parsed = null;
             if (root != null)
-                parsed = Translator.Translate(root, NamedValues, Params, out v);
+                try
+                {
+                    parsed = Translator.Translate(root, NamedValues, Params, out v);
+                }
+                catch (Exception e)
+                {
+                    _error = e.Message;
+                    return;
+                }
             if (cleanup)
             {
                 for (var index = NamedValues.Count - 1; index >= 0; index--)
@@ -121,6 +138,7 @@ namespace Eval
                         NamedValues.RemoveAt(index);
             }
 
+            ExpectedFinalStackLength = v.NextIndex;
             Content = parsed;
         }
 
@@ -148,12 +166,20 @@ namespace Eval
         public string Name;
         public Vector3 Value;
         public FormulaParamFlag IsSingleFloat;
+        [Delayed]
         public string SubFormula;
+        public string SubFormulaError { get; private set; }
         public INode SubFormulaNode { get; private set; }
 
         public static FormulaParam FromSubFormula(string name, INode subformula)
         {
             return new FormulaParam(name, FormulaParamFlag.Formula) {SubFormulaNode = subformula};
+        }
+
+        public void ParseSubFormula()
+        {
+            SubFormulaNode = Parser.Parse(SubFormula, out var error);
+            SubFormulaError = error;
         }
         
         public FormulaParam(string name, FormulaParamFlag isSingleFloat = FormulaParamFlag.Vector3)
@@ -163,6 +189,7 @@ namespace Eval
             IsSingleFloat = isSingleFloat;
             SubFormula = null;
             SubFormulaNode = null;
+            SubFormulaError = null;
         }
     }
 }
