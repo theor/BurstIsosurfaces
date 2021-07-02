@@ -131,7 +131,7 @@ namespace Eval
                     _error = e.Message;
                     return;
                 }
-            if (cleanup)
+            if (cleanup && NamedValues != null)
             {
                 for (var index = NamedValues.Count - 1; index >= 0; index--)
                     if(v != null && !v.VariableInfos.TryGetValue(NamedValues[index].Name, out var info))

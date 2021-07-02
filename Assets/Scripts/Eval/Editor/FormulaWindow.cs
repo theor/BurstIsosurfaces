@@ -21,6 +21,7 @@ namespace Eval.Editor
         private Vector3 ParamA;
         private Vector3 Result;
         private bool _dirty;
+        private string _text;
 
         private void OnEnable()
         {
@@ -29,13 +30,31 @@ namespace Eval.Editor
                 Formula = new Formula();
             Formula.SetParameters("a");
             _dirty = true;
+            _text = "test";
+        }
+
+        string Format(string input)
+        {
+            if (string.IsNullOrEmpty(input))
+                return input;
+            var oldValue = input.Substring(0,1);
+            return input.Replace(oldValue, $"<color=#ff0000>{oldValue}</color>");
         }
 
         private void OnGUI()
         {
             EditorGUIUtility.wideMode = true;
+
+            // _text = GuiExtensions.RichTextField(_text, Format(_text));
+            // EditorGUILayout.LabelField(Formula.Input);
+            // _text = EditorGUILayout.TextField(_text, transparentTextFieldStyle);
+            // var r = GUILayoutUtility.GetLastRect();
+            // var s = new GUIStyle(EditorStyles.textField) {richText = true};
+            // EditorGUILayout.TextField(Format(_text), s);
+            // EditorGUI.LabelField(r, Format(_text), new GUIStyle(EditorStyles.label){richText = true, padding = s.padding});
+            
             _e.OnInspectorGUI();
-            Formula.LiveEdit(ref _evalgraph, (graph, newGraph) => _dirty = true);
+            // Formula.LiveEdit(ref _evalgraph, (graph, newGraph) => _dirty = true);
             var c = Formula.Content;
             EditorGUILayout.LabelField("OpCodes");
             if(c != null)
