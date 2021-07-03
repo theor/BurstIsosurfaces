@@ -122,6 +122,20 @@ namespace Eval
             Translator.Variables v = null;
             EvalGraph.Node[] parsed = null;
             if (root != null)
+            {
+                if (NamedValues != null)
+                {
+                    for (var index = 0; index < NamedValues.Count; index++)
+                    {
+                        var formulaParam = NamedValues[index];
+                        if (formulaParam.IsSingleFloat == FormulaParam.FormulaParamFlag.Formula &&
+                            formulaParam.SubFormulaNode == null && string.IsNullOrEmpty(formulaParam.SubFormulaError))
+                        {
+                            formulaParam.ParseSubFormula();
+                            NamedValues[index] = formulaParam;
+                        }
+                    }
+                }
                 try
                 {
                     parsed = Translator.Translate(root, NamedValues, Params, out v);
@@ -131,6 +145,7 @@ namespace Eval
                     _error = e.Message;
                     return;
                 }
+            }
             if (cleanup && NamedValues != null)
             {
                 for (var index = NamedValues.Count - 1; index >= 0; index--)

@@ -30,7 +30,12 @@ namespace Eval.Runtime
                 Index = 0;
             }
 
-            public static Node Param(byte index) => new Node(EvalOp.Param_0, index);
+            public static Node Param(byte index)
+            {
+                Assert.AreNotEqual((byte)0, index, "Index must be in base1");
+                return new Node(EvalOp.Param_0, index);
+            }
+
             public static Node Ld(byte index)
             {
                 Assert.AreNotEqual((byte)0, index, "Index must be in base1");

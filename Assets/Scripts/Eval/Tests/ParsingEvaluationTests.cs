@@ -45,11 +45,43 @@ public class ParsingEvaluationTests : EvaluationTestsBase
 
     [TestCaseSource(nameof(Cases))]
     public void ParseRunTest(float3 result, string input, (string,float3)[] @params) =>
-        ParseRun(result, input, new Dictionary<string, float3>(), @params);
+        ParseRun(result, false, input, new Dictionary<string, float3>(), @params);
+    [TestCaseSource(nameof(Cases))]
+    public void ParseSimplifyRunTest(float3 result, string input, (string,float3)[] @params) =>
+        ParseRun(result, true, input, new Dictionary<string, float3>(), @params);
 
-  
+
+    [TestCase("1 + 2")]
+    [TestCase("1 * 2 + 3")]
+    [TestCase("1 * 2 + 3 * 4")]
+    [TestCase("x")]
+    [TestCase("1 * 2 + x * 4")]
+    [TestCase("pow(2,8)")]
+    [TestCase("pow(2,8) * 2 + 1")]
+    [TestCase("pow(2,8) * 2 + 1 + x")]
+    [TestCase("x + pow(2,8) * 2 + 1")]
+    [TestCase("x + (pow(2,8) * 2 + 1)")]
+    [TestCase("p * 2 + p")]
+    public void Simplify(string input)
+    {
+        var n = Parser.Parse(input, out _);
+        var tr = Translator.Translate(n, new List<FormulaParam>{new FormulaParam("p"){Value = Vector3.one}}, new List<string>{"x"}, out _);
+        var folded = ConstantFolding.Fold(tr);
+        Debug.Log(String.Join("\n", tr));
+        Debug.Log(Formatter.Format(n, Formatter.FormatFlags.DifferentColorPerNode | Formatter.FormatFlags.ParensAroundBinaryOperators));
+        Debug.Log(String.Join("\n", folded));
+    }
+
+
     [TestCaseSource(nameof(SubCases))]
-    public void ParseRunSubFormulas(bool valid, string mainFormula, float3 result, params (string variable, string formula)[] formulas)
+    public void ParseRunSubFormulas(bool valid, string mainFormula, float3 result,
+        params (string variable, string formula)[] formulas)
+        => ParseRunSubFormulasSimplify(valid, false, mainFormula, result, formulas);
+    [TestCaseSource(nameof(SubCases))]
+    public void ParseRunSimplifiedSubFormulas(bool valid, string mainFormula, float3 result,
+        params (string variable, string formula)[] formulas)
+        => ParseRunSubFormulasSimplify(valid, true, mainFormula, result, formulas);
+    public void ParseRunSubFormulasSimplify(bool valid, bool simplify, string mainFormula, float3 result, params (string variable, string formula)[] formulas)
     {
         var main = Parser.Parse(mainFormula, out var err);
         Assert.IsNull(err);
@@ -68,6 +100,9 @@ public class ParsingEvaluationTests : EvaluationTestsBase
         try
         {
             var nodes = Translator.Translate(main, formulaParams, null, out var usedValues);
+            if (simplify)
+                nodes = ConstantFolding.Fold(nodes);
+            Debug.Log(string.Join("\n", nodes));
             Run(result, nodes, (byte) (usedValues.NextIndex), 10, null);
         }
         catch (Exception)
@@ -97,8 +132,8 @@ public class ParsingEvaluationTests : EvaluationTestsBase
     public void PreserveParamsMultipleExecutions()
     {
         var variables = new Dictionary<string, float3>();
-        ParseRun(1, "a", variables, ("a",1),("b",2));
-        ParseRun(2, "b", variables, ("a",1),("b",2));
+        ParseRun(1,false,  "a", variables, ("a",1),("b",2));
+        ParseRun(2,false,  "b", variables, ("a",1),("b",2));
     }
 }
 
@@ -130,11 +165,14 @@ public class EvaluationTestsBase
         }
     }
 
-    protected void ParseRun(float3 result, string input, Dictionary<string, float3> variables, params (string,float3)[] @params)
+    protected void ParseRun(float3 result, bool simplify, string input, Dictionary<string, float3> variables, params (string,float3)[] @params)
     {
         var n = Parser.Parse(input, out var err);
         Assert.IsNull(err, err);
         var nodes = Translator.Translate(n, variables.Select(x => new FormulaParam(x.Key){Value = x.Value}).ToList(), @params.Select(x => x.Item1).ToList(), out var usedValues);
+        
+        if (simplify)
+            nodes = ConstantFolding.Fold(nodes);
         Debug.Log(string.Join("\n",variables.Select(x => $"{x.Key}: {x.Value}")));
         Run(result, nodes, 1, 10, @params.Select(x => x.Item2).ToArray());
     }
@@ -179,8 +217,8 @@ public class EvaluationTests : EvaluationTestsBase
     {
         Run(new float3(1, 2, 3), new[]
         {
-            EvalGraph.Node.Param(0),
             EvalGraph.Node.Param(1),
+            EvalGraph.Node.Param(2),
             new EvalGraph.Node(EvalOp.Add_2),
         }, 1, 10, new float3(1, 2, 0), new float3(0, 0, 3));
     }

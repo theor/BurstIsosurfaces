@@ -13,6 +13,7 @@ namespace Eval.Runtime
         Add_2,Sub_2,
         Mul_2,Div_2,
         Mod_2,
+        Pow_2,
         Minus_1,
         Abs_1,
         Saturate_1,

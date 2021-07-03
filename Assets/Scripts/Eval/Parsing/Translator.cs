@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using Eval.Runtime;
 using Unity.Mathematics;
+using UnityEngine;
 using UnityEngine.Assertions;
 
 namespace Eval
@@ -62,7 +63,7 @@ namespace Eval
                 case Variable variable:
                     var paramIndex = formulaParams == null ? -1 : formulaParams.IndexOf(variable.Id);
                     if(paramIndex >= 0)
-                        nodes.Add(EvalGraph.Node.Param((byte) paramIndex));
+                        nodes.Add(EvalGraph.Node.Param((byte) (paramIndex + 1)));
                     else // not a param, but a user created variable (named value)
                     {
                         var flag = variable.Id.StartsWith("f", StringComparison.OrdinalIgnoreCase)
@@ -162,7 +163,9 @@ namespace Eval
                     nodes.Add(new EvalGraph.Node(overload.OpCode));
                     break;
 
-                default: throw new NotImplementedException(node?.ToString() ?? "null");
+                default:
+                    Debug.LogError("NULL");
+                    throw new NotImplementedException(node?.ToString() ?? "null");
             }
         }
     }
