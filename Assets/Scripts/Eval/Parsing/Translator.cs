@@ -23,6 +23,8 @@ namespace Eval
             // Ld_0 op index, base 1
             public int Index;
             public List<EvalGraph.Node> Translated;
+            // instead of computing the subformula once and loading the cached result with LD, recompute it everytime
+            public bool Inline;
         }
 
         public class Variables
@@ -35,24 +37,30 @@ namespace Eval
         {
             public int Compare(FormulaParam x, FormulaParam y) => string.Compare(x.Name, y.Name, StringComparison.Ordinal);
         }
-        
+
+        [Flags]
+        public enum TranslationOptions
+        {
+            None = 0,
+            FoldConstantExpressions = 1,
+        }
         public static EvalGraph.Node[] Translate(INode node, List<FormulaParam> variables, List<string> parameters,
-            out Variables v)
+            out Variables v, TranslationOptions options = TranslationOptions.None)
         {
             List<EvalGraph.Node> nodes = new List<EvalGraph.Node>();
             v = new Variables();
-            Rec(nodes, variables, node, parameters, v);
+            Rec(nodes, variables, node, parameters, v, options);
             int insertIndex = 0;
-            foreach (var keyValuePair in v.VariableInfos.Where(x => x.Value.Index != 0).OrderBy(x => x.Value.Index))
+            foreach (var keyValuePair in v.VariableInfos.Where(x => !x.Value.Inline && x.Value.Index != 0).OrderBy(x => x.Value.Index))
             {
                 nodes.InsertRange(insertIndex, keyValuePair.Value.Translated);
                 insertIndex += keyValuePair.Value.Translated.Count;
             }
-            return nodes.ToArray();
+            return (options & TranslationOptions.FoldConstantExpressions) != 0 ? ConstantFolding.Fold(nodes).ToArray() : nodes.ToArray();
         }
 
         private static void Rec(List<EvalGraph.Node> nodes, List<FormulaParam> variables, INode node,
-            List<string> formulaParams, Variables variableInfos)
+            List<string> formulaParams, Variables variableInfos, TranslationOptions translationOptions)
         {
             
             switch (node)
@@ -82,13 +90,21 @@ namespace Eval
                         if (!variableInfos.VariableInfos.TryGetValue(variable.Id, out var info)) 
                         {
                             variableInfos.VariableInfos.Add(variable.Id, info = new VariableInfo());
+                            
+                            // SUB FORMULA
                             if (variableParam.IsSingleFloat == FormulaParam.FormulaParamFlag.Formula)
                             {
                                 info.Translated = new List<EvalGraph.Node>();
                                 if(info.Translated == null && string.IsNullOrEmpty(variableParam.SubFormulaError))
                                     variableParam.ParseSubFormula();
-                                Rec(info.Translated, variables, variableParam.SubFormulaNode, formulaParams, variableInfos);
-                                info.Index = variableInfos.NextIndex++;
+                                Rec(info.Translated, variables, variableParam.SubFormulaNode, formulaParams, variableInfos, translationOptions);
+                                if ((translationOptions & TranslationOptions.FoldConstantExpressions) != 0)
+                                    info.Translated = ConstantFolding.Fold(info.Translated);
+                                
+                                if (info.Translated.Count == 1 && info.Translated[0].Op == EvalOp.Const_0)
+                                    info.Inline = true;
+                                else
+                                    info.Index = variableInfos.NextIndex++;
                             }
                         }
 
@@ -102,10 +118,17 @@ namespace Eval
 
                         if (variableParam.IsSingleFloat == FormulaParam.FormulaParamFlag.Formula)
                         {
-                            if (info.Index == 0)
-                                throw new InvalidDataException(
-                                    $"The definition of variable '{variable.Id}' is recursive, aborting");
-                            nodes.Add(EvalGraph.Node.Ld((byte) info.Index));
+                            if (info.Inline)
+                            {
+                                nodes.Add(info.Translated[0]);
+                            }
+                            else
+                            {
+                                if (info.Index == 0)
+                                    throw new InvalidDataException(
+                                        $"The definition of variable '{variable.Id}' is recursive, aborting");
+                                nodes.Add(EvalGraph.Node.Ld((byte) info.Index));
+                            }
                         }
                         else
                         {
@@ -121,7 +144,7 @@ namespace Eval
 
                     break;
                 case UnOp u:
-                    Rec(nodes, variables, u.A, formulaParams, variableInfos);
+                    Rec(nodes, variables, u.A, formulaParams, variableInfos, translationOptions);
                     if(u.Type == OpType.Plus)
                         break;
                     if(u.Type == OpType.Minus)
@@ -131,8 +154,8 @@ namespace Eval
                     break;
                 case BinOp bin:
                     // reverse order
-                    Rec(nodes, variables, bin.B, formulaParams, variableInfos);
-                    Rec(nodes, variables, bin.A, formulaParams, variableInfos);
+                    Rec(nodes, variables, bin.B, formulaParams, variableInfos, translationOptions);
+                    Rec(nodes, variables, bin.A, formulaParams, variableInfos, translationOptions);
                     nodes.Add(new EvalGraph.Node(bin.Type switch
                     {
                         OpType.Add => EvalOp.Add_2,
@@ -149,7 +172,7 @@ namespace Eval
                         Assert.AreEqual(f.Arguments.Count, n);
                         // reverse order
                         for (int i = n - 1; i >= 0; i--)
-                            Rec(nodes, variables, f.Arguments[i], formulaParams, variableInfos);
+                            Rec(nodes, variables, f.Arguments[i], formulaParams, variableInfos, translationOptions);
                     }
                 
                     if(!Functions.TryGetOverloads(f.Id, out var overloads))

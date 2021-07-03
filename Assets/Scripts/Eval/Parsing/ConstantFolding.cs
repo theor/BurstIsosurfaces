@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using Eval.Runtime;
 using Unity.Mathematics;
 
@@ -10,10 +11,8 @@ namespace Eval
         {
             public static FoldContext New() => new FoldContext
             {
-                Result = new List<EvalGraph.Node>(),
                 Stack = new List<Val>(),
             };
-            public List<EvalGraph.Node> Result;
 
             struct Val
             {
@@ -75,21 +74,22 @@ namespace Eval
                 _pushed++;
             }
         }
-        public static EvalGraph.Node[] Fold(EvalGraph.Node[] nodes)
+        public static List<EvalGraph.Node> Fold(IEnumerable<EvalGraph.Node> nodes)
         {
             var current = 0;
             FoldContext ctx = FoldContext.New();
             List<EvalGraph.Node> result = new List<EvalGraph.Node>();
-            while (current < nodes.Length)
+            var count = nodes.Count();
+            while (current < count)
             {
-                var node = nodes[current];
+                var node = nodes.ElementAt(current);
                 ctx.StartNode(node);
                 EvalState.ExecuteOp(node, ref ctx);
                 ctx.EndNode(result, node);
                 current++;
             }
 
-            return result.ToArray();
+            return result;
             // switch (node)
             // {
             //     case ExpressionValue expressionValue:

@@ -34,9 +34,12 @@ public class ParsingEvaluationTests : EvaluationTestsBase
             yield return F(10, "x+x", ("x", "5"));
             yield return F(10, "x+x", ("x", "2+3"));
             yield return F(5, "x", ("x", "y"), ("y", "5"));
+            yield return F(10, "x", ("x", "y*2"), ("y", "5"));
+            yield return F(30, "x*3", ("x", "y*2"), ("y", "5"));
             yield return F(10, "x+x", ("x", "y"), ("y", "5"));
             yield return F(8, "x+y", ("x", "5"), ("y", "3" ));
             yield return F(8, "y+x", ("x", "5"), ("y", "3" ));
+            yield return F(32, "x", ("x", "y+z"), ("y", "3*z" ), ("z","8"));
             
             // recursive variable definition
             yield return Error(8, "y", ("y", "x" ), ("x", "y"));
@@ -65,9 +68,7 @@ public class ParsingEvaluationTests : EvaluationTestsBase
     public void Simplify(string input)
     {
         var n = Parser.Parse(input, out _);
-        var tr = Translator.Translate(n, new List<FormulaParam>{new FormulaParam("p"){Value = Vector3.one}}, new List<string>{"x"}, out _);
-        var folded = ConstantFolding.Fold(tr);
-        Debug.Log(String.Join("\n", tr));
+        var folded = Translator.Translate(n, new List<FormulaParam>{new FormulaParam("p"){Value = Vector3.one}}, new List<string>{"x"}, out _, Translator.TranslationOptions.FoldConstantExpressions);
         Debug.Log(Formatter.Format(n, Formatter.FormatFlags.DifferentColorPerNode | Formatter.FormatFlags.ParensAroundBinaryOperators));
         Debug.Log(String.Join("\n", folded));
     }
@@ -99,9 +100,8 @@ public class ParsingEvaluationTests : EvaluationTestsBase
 
         try
         {
-            var nodes = Translator.Translate(main, formulaParams, null, out var usedValues);
-            if (simplify)
-                nodes = ConstantFolding.Fold(nodes);
+            var nodes = Translator.Translate(main, formulaParams, new List<string>{"p"}, out var usedValues, 
+                simplify ? Translator.TranslationOptions.FoldConstantExpressions : Translator.TranslationOptions.None);
             Debug.Log(string.Join("\n", nodes));
             Run(result, nodes, (byte) (usedValues.NextIndex), 10, null);
         }
@@ -169,11 +169,14 @@ public class EvaluationTestsBase
     {
         var n = Parser.Parse(input, out var err);
         Assert.IsNull(err, err);
-        var nodes = Translator.Translate(n, variables.Select(x => new FormulaParam(x.Key){Value = x.Value}).ToList(), @params.Select(x => x.Item1).ToList(), out var usedValues);
+        var nodes = Translator.Translate(n, 
+            variables.Select(x => new FormulaParam(x.Key){Value = x.Value}).ToList(), 
+            @params.Select(x => x.Item1).ToList(), out var usedValues,
+            simplify ? Translator.TranslationOptions.FoldConstantExpressions : Translator.TranslationOptions.None);
         
-        if (simplify)
-            nodes = ConstantFolding.Fold(nodes);
         Debug.Log(string.Join("\n",variables.Select(x => $"{x.Key}: {x.Value}")));
+        Debug.Log("Opcodes");
+        Debug.Log(string.Join("\n", nodes));
         Run(result, nodes, 1, 10, @params.Select(x => x.Item2).ToArray());
     }
 }

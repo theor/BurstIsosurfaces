@@ -12,7 +12,7 @@ namespace Eval.Editor
     {
         public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
         {
-            int i = 1; // input
+            int i = 2; // input + options
             // if (property.propertyType == SerializedPropertyType.ManagedReference)
             // {
             //     var formulaObject = new SerializedObject(property.objectReferenceValue);
@@ -68,6 +68,8 @@ namespace Eval.Editor
 
                 // formula.Input = GuiExtensions.RichTextField(rect, formula.Input, _lastColoredInput);
                 EditorGUI.PropertyField(rect, property.FindPropertyRelative(nameof(Formula.Input)), label); 
+                rect.y += EditorGUIUtility.singleLineHeight;
+                EditorGUI.PropertyField(rect, property.FindPropertyRelative(nameof(Formula.Options))); 
                 if (EditorGUI.EndChangeCheck())// || _lastInput != formula.Input)
                 {
                     // Debug.Log("CHANGE");

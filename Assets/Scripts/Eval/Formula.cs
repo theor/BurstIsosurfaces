@@ -46,6 +46,8 @@ namespace Eval
         [Delayed]
         public string Input;
 
+        public Translator.TranslationOptions Options;
+
         [SerializeField]
         private int ExpectedFinalStackLength;
         private const byte MaxStackSize = 10;
@@ -138,7 +140,7 @@ namespace Eval
                 }
                 try
                 {
-                    parsed = Translator.Translate(root, NamedValues, Params, out v);
+                    parsed = Translator.Translate(root, NamedValues, Params, out v, Options);
                 }
                 catch (Exception e)
                 {

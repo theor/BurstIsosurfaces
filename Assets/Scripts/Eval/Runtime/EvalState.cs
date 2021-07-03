@@ -29,9 +29,10 @@ namespace Eval.Runtime
         }
 
         [BurstCompile]
-        public static unsafe void Run(in EvalGraph graph, float3 singleParam, out float3 res)
+        public static unsafe void Run(in EvalGraph graph, in float3 singleParam, out float3 res)
         {
-            Run(graph, &singleParam, out res);
+            var p2 = singleParam;
+            Run(graph, &p2, out res);
         }
 
         struct Impl : IContext
