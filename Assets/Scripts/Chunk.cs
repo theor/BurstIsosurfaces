@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
 using Unity.Jobs;
 using Unity.Mathematics;
 using UnityEngine;
@@ -166,24 +167,34 @@ namespace UnityTemplateProjects
                 }
                 case Algorithm.DualContouringSplit:
                 {
+                    var vertIndices = new NativeArray<int>(maxVertexCount, Allocator.TempJob);
+                    var _edgeMasks = new NativeArray<EdgeCase>(_densities.Length, Allocator.TempJob);
+                    var outputVerts = OutputMeshData[0].GetVertexData<float3>();
+                    var outputTris = OutputMeshData[0].GetIndexData<int>();
+                    NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref outputTris, AtomicSafetyHandle.Create());
+                    var outputNormals = OutputMeshData[0].GetVertexData<float3>(stream:1);
+                    NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref outputNormals, AtomicSafetyHandle.Create());
+
                     var job = new DualContouringJob2
                     {
                         VoxelSide = _meshGen.VoxelSide,
                         Isolevel = 0,
                         Densities = _densities,
-                        // edgeMasks = _edgeMasks,
-                    }.Schedule();
+                        edgeMasks = _edgeMasks,
+                    }.Schedule(h);
                     job = new DualContouringJob2Phase2
                     {
                         VoxelSide = _meshGen.VoxelSide,
                         Scale = Scale,
                         Coords = Coords,
-                        OutputMesh = OutputMeshData[0],
                         IndexVertexCounts = _indexVertexCounts,
-                        // edgeMasks = _edgeMasks,
+                        edgeMasks = _edgeMasks,
                         EvalGraph = _meshGen.DensityFormulaEvaluator,
-                        outputVerts = default,
-                        vertIndices = default,
+                        outputVerts = outputVerts,
+                        vertIndices = vertIndices,
+                        
+                        outputTris = outputTris,
+                        outputNormals = outputNormals,
                     }.Schedule(job);
                     job = new DualContouringJob2Smooth
                     {
@@ -194,9 +205,10 @@ namespace UnityTemplateProjects
                         EdgeTable = _meshGen.EdgeTable,
                         EdgeConnection = _meshGen.EdgeConnection,
                         EdgeDirection = _meshGen.EdgeDirection,
-                        vertIndices = default,
-                        outputVerts = default,
+                        vertIndices = vertIndices,
+                        outputVerts = outputVerts,
                     }.Schedule(job);
+                    this._handle = vertIndices.Dispose(_edgeMasks.Dispose(job));
                     break;
                 }
                 default:

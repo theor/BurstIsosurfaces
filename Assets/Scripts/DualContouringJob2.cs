@@ -1,4 +1,5 @@
 using Eval.Runtime;
+using Unity.Burst;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Jobs;
@@ -27,6 +28,7 @@ namespace UnityTemplateProjects
      *  paper           actual from marching cube
      */
 
+    [BurstCompile]
     public struct DualContouringJob2 : IJob
     {
         public int VoxelSide;
@@ -89,13 +91,12 @@ namespace UnityTemplateProjects
         }
     }
 
+    [BurstCompile]
     public struct DualContouringJob2Phase2 : IJob
     {
         public int VoxelSide;
         public int Scale;
         public int3 Coords;
-        public Mesh.MeshData OutputMesh;
-        // [WriteOnly]
         public NativeArray<int> IndexVertexCounts;
         [ReadOnly]
         public NativeArray<EdgeCase> edgeMasks;
@@ -103,6 +104,8 @@ namespace UnityTemplateProjects
         public EvalGraph EvalGraph;
 
         public NativeArray<float3> outputVerts;
+        public NativeArray<int> outputTris;
+        public NativeArray<float3> outputNormals;
         public NativeArray<int> vertIndices;
         
         public unsafe void Execute()
@@ -112,8 +115,7 @@ namespace UnityTemplateProjects
             var delta = Scale / ((float)VoxelSide);
             
             EvalState evalState = new EvalState();
-            var outputNormals = OutputMesh.GetVertexData<float3>(stream:1);
-            var outputTris = OutputMesh.GetIndexData<int>();
+            
             // var vertIndices = new NativeArray<int>(edgeMasks.Length, Allocator.Temp);
             
             int nextVertexIndex = 0;
@@ -261,6 +263,7 @@ namespace UnityTemplateProjects
         }
     }
 
+    [BurstCompile]
     public struct DualContouringJob2Smooth : IJob
     {
         public int VoxelSide;
